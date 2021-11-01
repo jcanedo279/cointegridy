@@ -14,7 +14,7 @@ class VirtMark:
         
         pass
     
-    def buy(self, )
+    # def buy(self, )
 
 
 

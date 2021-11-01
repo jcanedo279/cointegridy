@@ -65,7 +65,7 @@ class Processor():
     
     @staticmethod
     def id_to_prices(cg, idx, start_date, end_date):
-        prices = id_to_tmsp_seq(cg, idx, start_date, end_date)
+        prices = Processor.id_to_tmsp_seq(cg, idx, start_date, end_date)
         
         return np.array([price[1] for price in prices])
     
@@ -80,7 +80,7 @@ class Processor():
         df.head()
 
         if plot:
-            plot_df(df)
+            Processor.plot_df(df)
         
         return df
     
@@ -140,7 +140,7 @@ class Processor():
         series_m.name = f'{series.name}_M'
 
         if plot:
-            plot_series([series, series_m],
+            Processor.plot_series([series, series_m],
                         x_label='Time', 
                         y_label='Value', 
                         linestyles=[None, 'dashed'], 
@@ -245,14 +245,14 @@ class Processor():
         df = series.to_frame()
 
         for lookback_wind in ma_lookbacks:
-            series_w = take_roll_avg(series, lookback_wind, plot=False)
+            series_w = Processor.take_roll_avg(series, lookback_wind, plot=False)
             df = df.join(series_w.to_frame())
 
-        df = df.join(cum_ret(series))
-        df = df.join(daily_ret(series))
+        df = df.join(Processor.cum_ret(series))
+        df = df.join(Processor.daily_ret(series))
 
         if plot:
-            plot_df(df[list(df.columns)[:len(ma_lookbacks)+1]], title=f'{series.name} MAs vs. Time')
+            Processor.plot_df(df[list(df.columns)[:len(ma_lookbacks)+1]], title=f'{series.name} MAs vs. Time')
         return df
 
     ##############
