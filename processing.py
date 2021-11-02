@@ -12,23 +12,28 @@ import copy
 
 class Processor():
     
-    def create_portfolio(self, cg, ids, start_date, end_date):
+    
+    def __init__(self, cg):
         
-        self.get_data(cg, ids, start_date, end_date)
+        self.cg = cg ## cg object used for interacting w/ CoinGecko API
+        
+        
+    def create_portfolio(self, ids, start_date, end_date):
+        
+        self.get_data(ids, start_date, end_date)
         
         port = self.data.sum(axis=1)
-        port.name = 'port_val'
         
         self.portfolio = port
 
         return port
     
-    def get_data(self, cg, ids, start_date, end_date):
+    def get_data(self, ids, start_date, end_date):
         
         dfs = []
     
         for idx in ids:
-            market_df = Processor.id_to_df(cg, idx, start_date, end_date)
+            market_df = Processor.id_to_df(self.cg, idx, start_date, end_date)
             market_df.columns = [idx]
             dfs.append(market_df)
 
@@ -223,8 +228,7 @@ class Processor():
     @staticmethod
     def from_tmsp(tmsp, trg_tz, short=False):
         trg_tzobj = trg_tz if type(trg_tz)!=str else pytz.timezone(trg_tz)
-        if not type(tmsp) is int:
-            tmsp = tmsp.timestamp()
+        if not type(tmsp) is int: tmsp = tmsp.timestamp()
         tmsp = tmsp/1000 if short else tmsp
         return datetime.datetime.fromtimestamp(tmsp, trg_tzobj)
 
