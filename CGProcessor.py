@@ -1,21 +1,22 @@
 import numpy as np
+import sys
 import pandas as pd
 # import backtester
 import datetime
-import statsmodels
-import statsmodels.api as sm
-from statsmodels.tsa.stattools import coint, adfuller
 import matplotlib.pyplot as plt
 from datetime import timezone
-import pytz
 import copy
 
-class Processor:
+from bin import Statistics, Tests, Time, Transforms
+
+from pycoingecko import CoinGeckoAPI
+
+class CGProcessor:
     
     
-    def __init__(self, cg):
+    def __init__(self):
         
-        self.cg = cg ## cg object used for interacting w/ CoinGecko API
+        self.cg = CoinGeckoAPI()
         
         
     def create_portfolio(self, ids, start_date, end_date):
@@ -33,7 +34,7 @@ class Processor:
         dfs = []
     
         for idx in ids:
-            market_df = Processor.id_to_df(self.cg, idx, start_date, end_date)
+            market_df = CGProcessor.id_to_df(self.cg, idx, start_date, end_date)
             market_df.columns = [idx]
             dfs.append(market_df)
 
@@ -70,13 +71,13 @@ class Processor:
     
     @staticmethod
     def id_to_prices(cg, idx, start_date, end_date):
-        prices = Processor.id_to_tmsp_seq(cg, idx, start_date, end_date)
+        prices = CGProcessor.id_to_tmsp_seq(cg, idx, start_date, end_date)
         
         return np.array([price[1] for price in prices])
     
     @staticmethod
     def id_to_df(cg, idx, start_date, end_date, plot=False):
-        market = Processor.id_to_tmsp_seq(cg, idx, start_date, end_date)
+        market = CGProcessor.id_to_tmsp_seq(cg, idx, start_date, end_date)
         tmsps, prices = list(zip(*market))
 
         df = pd.DataFrame(index=tmsps)
@@ -85,7 +86,7 @@ class Processor:
         df.head()
 
         if plot:
-            Processor.plot_df(df)
+            CGProcessor.plot_df(df)
         
         return df
     
@@ -93,13 +94,11 @@ class Processor:
     ## TRANSFORMS ##
     ################
 
-    def take_roll_avg(self, window, plot=True):
-        series_ma = self.portfolio.rolling(window).mean()
-        series_ma.fillna(method='bfill', inplace=True)
-        series_ma.name = f'{self.portfolio.name}_MA{window}'
+    def roll_avg(self, window, plot=True):
+        series_ma = Transforms.roll_avg(self.portfolio, window)
 
         if plot:
-            Processor.plot_series([self.portfolio, series_ma], 
+            CGProcessor.plot_series([self.portfolio, series_ma], 
                              x_label='Time', 
                              y_label='Value', 
                              linestyles=[None, 'dashed'], 
@@ -120,7 +119,7 @@ class Processor:
         series_m = pd.Series(s_m, index=series.index, name=f'{series.name}_M')
 
         if plot:
-            Processor.plot_series([series, series_m],
+            CGProcessor.plot_series([series, series_m],
                         x_label='Time', 
                         y_label='Value', 
                         linestyles=[None, 'dashed'], 
@@ -128,97 +127,14 @@ class Processor:
                         title=f"{series.name}+Mean vs. Time")
             
         return s_m
-
-    @staticmethod
-    def sharpe_ratio(series_dr):
-        adr, sddr = series_dr.mean(), series_dr.std()
-
-        sr = np.sqrt(252)*adr/sddr # we use risk-free rate = 0
-        
-        return sr
-
-    ######################
-    ## STATISTICS TESTS ##
-    ######################
-
-    @staticmethod
-    def is_stationary(series, pct='1%'):
-        # We must observe significant p-value to convince ourselves that the series is stationary
-        results = adfuller(series, store=True, regresults=True)
-        t_stat = results[0]
-
-        try:
-            cutoff = results[2][pct]
-        except:
-            raise('Pct must be 1%, 5%, or 10%, but was given: ', pct)
-            
-        confidence = str(100 - int(pct[:-1]))+'%'
-
-        if t_stat < cutoff:
-            return True
-        else:
-            return False
-
-    @staticmethod
-    def is_coint(series_1, series_2):
-        """
-            Perform Cointegrated Augmented Dickey-Fuller test.
-            
-            1) Determine optimal hedge ratio between two stocks using Ordinary Least Squares regression.
-            
-            2) Test for stationarity of residuals (Z)
-            
-            2) a. If the random variable Z is stationary, then it is order 1 integrable
-            
-            3) Check that 
-            
-            https://towardsdatascience.com/constructing-cointegrated-cryptocurrency-portfolios-d0a27922891e
-            https://letianzj.github.io/cointegration-pairs-trading.html
-        """
-        results = sm.OLS(series_2, series_1).fit()
-        beta = results.params[series_1.name]
-
-        Z = series_2 - beta * series_1
-
-        is_stationary = Processor.is_stationary(Z)
-
-        if not is_stationary:
-            return False
-        
-        return coint(series_1, series_2)
-
-
-    ##############
-    ## TIMEZONE ##
-    ##############
-
-    @staticmethod
-    def to_timezone(dtobj, trg_tz):
-        trg_tzobj = trg_tz if type(trg_tz) is str else pytz.timezone(trg_tz)
-        return dtobj.astimezone(trg_tzobj)
-
-
-    @staticmethod
-    def from_tmsp(tmsp, trg_tz, short=False):
-        trg_tzobj = trg_tz if type(trg_tz)!=str else pytz.timezone(trg_tz)
-        if not type(tmsp) is int: tmsp = tmsp.timestamp()
-        tmsp = tmsp/1000 if short else tmsp
-        return datetime.datetime.fromtimestamp(tmsp, trg_tzobj)
-
-    @staticmethod
-    def get_loc_time():
-        return datetime.datetime.now()
-
-    @staticmethod
-    def get_utc_time():
-        return datetime.datetime.utcnow()
+    
 
     ################
     ## GENERATORS ##
     ################
 
     @staticmethod
-    def series_to_moving_feats(series, ma_lookbacks, plot=False):
+    def series_to_df_feats(series, ma_lookbacks, plot=False):
         """
             Extract a dataframe of moving fixed features from a timeseries
         """
@@ -226,14 +142,14 @@ class Processor:
         df = series.to_frame()
 
         for lookback_wind in ma_lookbacks:
-            series_w = Processor.take_roll_avg(series, lookback_wind, plot=False)
+            series_w = Transforms.roll_avg(series, lookback_wind)
             df = df.join(series_w.to_frame())
 
-        df = df.join(Processor.cum_ret(series))
-        df = df.join(Processor.daily_ret(series))
+        df = df.join(Transforms.cum_ret(series))
+        df = df.join(Transforms.daily_ret(series))
 
         if plot:
-            Processor.plot_df(df[list(df.columns)[:len(ma_lookbacks)+1]], title=f'{series.name} MAs vs. Time')
+            CGProcessor.plot_df(df[list(df.columns)[:len(ma_lookbacks)+1]], title=f'{series.name} MAs vs. Time')
         return df
 
     ##############
@@ -257,7 +173,7 @@ class Processor:
         working_series_seq = copy.deepcopy(series_seq)
 
         for series in working_series_seq:
-            series.index = [Processor.from_tmsp(ind, timezone.utc, short=True) for ind in series.index]
+            series.index = [Time.from_tmsp(ind, timezone.utc, short=True) for ind in series.index]
 
         plt.clf()
         plt.figure(figsize=(15,7))
