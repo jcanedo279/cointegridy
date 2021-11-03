@@ -123,7 +123,7 @@ class Processor():
         series_ma.name = f'{self.portfolio.name}_MA{window}'
 
         if plot:
-            self.plot_series([self.portfolio, series_ma], 
+            Processor.plot_series([self.portfolio, series_ma], 
                              x_label='Time', 
                              y_label='Value', 
                              linestyles=[None, 'dashed'], 
@@ -141,8 +141,7 @@ class Processor():
     @staticmethod
     def take_mean(series, plot=True):
         s_m = series.mean()
-        series_m = pd.Series(s_m, index=series.index)
-        series_m.name = f'{series.name}_M'
+        series_m = pd.Series(s_m, index=series.index, name=f'{series.name}_M')
 
         if plot:
             Processor.plot_series([series, series_m],
@@ -189,18 +188,18 @@ class Processor():
     @staticmethod
     def is_coint(series_1, series_2):
         """
-        Perform Cointegrated Augmented Dickey-Fuller test.
-        
-        1) Determine optimal hedge ratio between two stocks using Ordinary Least Squares regression.
-        
-        2) Test for stationarity of residuals (Z)
-        
-        2) a. If the random variable Z is stationary, then it is order 1 integrable
-        
-        3) Check that 
-        
-        https://towardsdatascience.com/constructing-cointegrated-cryptocurrency-portfolios-d0a27922891e
-        https://letianzj.github.io/cointegration-pairs-trading.html
+            Perform Cointegrated Augmented Dickey-Fuller test.
+            
+            1) Determine optimal hedge ratio between two stocks using Ordinary Least Squares regression.
+            
+            2) Test for stationarity of residuals (Z)
+            
+            2) a. If the random variable Z is stationary, then it is order 1 integrable
+            
+            3) Check that 
+            
+            https://towardsdatascience.com/constructing-cointegrated-cryptocurrency-portfolios-d0a27922891e
+            https://letianzj.github.io/cointegration-pairs-trading.html
         """
         results = sm.OLS(series_2, series_1).fit()
         beta = results.params[series_1.name]
@@ -245,7 +244,11 @@ class Processor():
     ################
 
     @staticmethod
-    def series_to_df_feats(series, ma_lookbacks, plot=False):
+    def series_to_moving_feats(series, ma_lookbacks, plot=False):
+        """
+            Extract a dataframe of moving fixed features from a timeseries
+        """
+        
         df = series.to_frame()
 
         for lookback_wind in ma_lookbacks:
