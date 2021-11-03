@@ -142,7 +142,7 @@ class Processor:
     ######################
 
     @staticmethod
-    def test_stationarity(series, pct='1%'):
+    def is_stationary(series, pct='1%'):
         # We must observe significant p-value to convince ourselves that the series is stationary
         results = adfuller(series, store=True, regresults=True)
         t_stat = results[0]
@@ -155,10 +155,8 @@ class Processor:
         confidence = str(100 - int(pct[:-1]))+'%'
 
         if t_stat < cutoff:
-            print(f't-stat = {t_stat}: The series {series.name} is stationary with confidence level ', confidence)
             return True
         else:
-            print(f't-stat = {t_stat} The series {series.name} is not stationary with confidence level ', confidence)
             return False
 
     @staticmethod
@@ -182,7 +180,7 @@ class Processor:
 
         Z = series_2 - beta * series_1
 
-        is_stationary = Processor.test_stationarity(Z)
+        is_stationary = Processor.is_stationary(Z)
 
         if not is_stationary:
             return False
