@@ -25,32 +25,35 @@ import pandas as pd
 import numpy as np
 
 from processing import *
+from bin import Statistics as stat
+from bin import Transforms as bumblebee
 
 class Coin():
 
-    def __init__(self, name, processor):
+    def __init__(self, name):
 
         self.name_ = name
         self.is_good_ = None
         self.start_ = None
         self.end_ = None
-        self.processor = processor
 
     def is_good(self, prices, start, end):
         """
-        Returns coefficients and intercept of linear combination.
+        Validity check: coin is I(1) during start:end
         
         Parameters:
 
         prices - timeseries data of coin price
+        start - first datetime in prices
+        end - last datetime in prices
 
         Assumptions:
 
         """
 
-        coin_is_stationary = self.processor.is_stationary(prices)
-        coin_returns = self.processor.differentiate(prices)
-        coin_returns_is_stationarity = self.processor.is_stationary(coin_returns)
+        coin_is_stationary = stat.is_stationary(prices)
+        coin_returns = bumblebee.differentiate(prices)
+        coin_returns_is_stationarity = stat.is_stationary(coin_returns)
 
         self.is_good_ = (not coin_is_stationary & coin_returns_is_stationarity)
 

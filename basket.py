@@ -41,6 +41,7 @@ from sklearn.preprocessing import MinMaxScaler
 import statsmodels.api as sm
 
 from processing import *
+from bin import Statistics as stat
 
 class Basket():
 
@@ -134,7 +135,10 @@ class Basket():
         all we need to test is that spread is stationary
         """
 
-        return self.processor_.is_stationary(spread, pct=pct)
+        if not self.is_valid():
+            raise("Basket is invalid, timeseries are not I(1)")
+
+        return stat.is_stationary(spread, pct=pct)
     
     def is_valid(self):
         """
