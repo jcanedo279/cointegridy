@@ -10,12 +10,14 @@ from datetime import timezone
 import pytz
 import copy
 
-class Processor:
+from pycoingecko import CoinGeckoAPI
+
+class CGProcessor:
     
     
-    def __init__(self, cg):
+    def __init__(self):
         
-        self.cg = cg ## cg object used for interacting w/ CoinGecko API
+        self.cg = CoinGeckoAPI()
         
         
     def create_portfolio(self, ids, start_date, end_date):
@@ -33,7 +35,7 @@ class Processor:
         dfs = []
     
         for idx in ids:
-            market_df = Processor.id_to_df(self.cg, idx, start_date, end_date)
+            market_df = CGProcessor.id_to_df(self.cg, idx, start_date, end_date)
             market_df.columns = [idx]
             dfs.append(market_df)
 
@@ -70,13 +72,13 @@ class Processor:
     
     @staticmethod
     def id_to_prices(cg, idx, start_date, end_date):
-        prices = Processor.id_to_tmsp_seq(cg, idx, start_date, end_date)
+        prices = CGProcessor.id_to_tmsp_seq(cg, idx, start_date, end_date)
         
         return np.array([price[1] for price in prices])
     
     @staticmethod
     def id_to_df(cg, idx, start_date, end_date, plot=False):
-        market = Processor.id_to_tmsp_seq(cg, idx, start_date, end_date)
+        market = CGProcessor.id_to_tmsp_seq(cg, idx, start_date, end_date)
         tmsps, prices = list(zip(*market))
 
         df = pd.DataFrame(index=tmsps)
@@ -85,7 +87,7 @@ class Processor:
         df.head()
 
         if plot:
-            Processor.plot_df(df)
+            CGProcessor.plot_df(df)
         
         return df
     
@@ -123,7 +125,7 @@ class Processor:
         series_ma.name = f'{self.portfolio.name}_MA{window}'
 
         if plot:
-            Processor.plot_series([self.portfolio, series_ma], 
+            CGProcessor.plot_series([self.portfolio, series_ma], 
                              x_label='Time', 
                              y_label='Value', 
                              linestyles=[None, 'dashed'], 
@@ -144,7 +146,7 @@ class Processor:
         series_m = pd.Series(s_m, index=series.index, name=f'{series.name}_M')
 
         if plot:
-            Processor.plot_series([series, series_m],
+            CGProcessor.plot_series([series, series_m],
                         x_label='Time', 
                         y_label='Value', 
                         linestyles=[None, 'dashed'], 
@@ -166,7 +168,7 @@ class Processor:
     ######################
 
     @staticmethod
-    def is_stationary(series, pct='1%'):
+    def test_stationarity(series, pct='1%'):
         # We must observe significant p-value to convince ourselves that the series is stationary
         results = adfuller(series, store=True, regresults=True)
         t_stat = results[0]
@@ -179,8 +181,10 @@ class Processor:
         confidence = str(100 - int(pct[:-1]))+'%'
 
         if t_stat < cutoff:
+            print(f't-stat = {t_stat}: The series {series.name} is stationary with confidence level ', confidence)
             return True
         else:
+            print(f't-stat = {t_stat} The series {series.name} is not stationary with confidence level ', confidence)
             return False
 
     @staticmethod
@@ -204,7 +208,7 @@ class Processor:
 
         Z = series_2 - beta * series_1
 
-        is_stationary = Processor.is_stationary(Z)
+        is_stationary = CGProcessor.test_stationarity(Z)
 
         if not is_stationary:
             return False
@@ -250,14 +254,14 @@ class Processor:
         df = series.to_frame()
 
         for lookback_wind in ma_lookbacks:
-            series_w = Processor.take_roll_avg(series, lookback_wind, plot=False)
+            series_w = CGProcessor.take_roll_avg(series, lookback_wind, plot=False)
             df = df.join(series_w.to_frame())
 
-        df = df.join(Processor.cum_ret(series))
-        df = df.join(Processor.daily_ret(series))
+        df = df.join(CGProcessor.cum_ret(series))
+        df = df.join(CGProcessor.daily_ret(series))
 
         if plot:
-            Processor.plot_df(df[list(df.columns)[:len(ma_lookbacks)+1]], title=f'{series.name} MAs vs. Time')
+            CGProcessor.plot_df(df[list(df.columns)[:len(ma_lookbacks)+1]], title=f'{series.name} MAs vs. Time')
         return df
 
     ##############
@@ -281,7 +285,7 @@ class Processor:
         working_series_seq = copy.deepcopy(series_seq)
 
         for series in working_series_seq:
-            series.index = [Processor.from_tmsp(ind, timezone.utc, short=True) for ind in series.index]
+            series.index = [CGProcessor.from_tmsp(ind, timezone.utc, short=True) for ind in series.index]
 
         plt.clf()
         plt.figure(figsize=(15,7))
