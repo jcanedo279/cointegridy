@@ -10,7 +10,7 @@ from datetime import timezone
 import pytz
 import copy
 
-class Processor():
+class Processor:
     
     
     def __init__(self, cg):
