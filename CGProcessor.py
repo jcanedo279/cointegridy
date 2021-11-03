@@ -1,14 +1,13 @@
 import numpy as np
+import sys
 import pandas as pd
 # import backtester
 import datetime
-import statsmodels
-import statsmodels.api as sm
-from statsmodels.tsa.stattools import coint, adfuller
 import matplotlib.pyplot as plt
 from datetime import timezone
-import pytz
 import copy
+
+from bin import Statistics, Tests, Time, Transforms
 
 from pycoingecko import CoinGeckoAPI
 
@@ -95,34 +94,8 @@ class CGProcessor:
     ## TRANSFORMS ##
     ################
 
-    @staticmethod
-    def differentiate(series):
-        series_d = series.diff()[1:]
-        series_d.name = f'{series.name}_D'
-        return series_d
-
-    @staticmethod
-    def integrate(series):
-        series_i = series.cumsum()
-        series_i.name = f'{series.name}_I'
-        return series_i
-
-    @staticmethod
-    def daily_ret(series):
-        series_dr = (series/series.shift(1) - 1)
-        series_dr.name = f'{series.name}_DR'
-        return series_dr
-
-    @staticmethod
-    def cum_ret(series):
-        series_cr = series/series.iloc[0] - 1
-        series_cr.name = f'{series.name}_CR'
-        return series_cr
-
-    def take_roll_avg(self, window, plot=True):
-        series_ma = self.portfolio.rolling(window).mean()
-        series_ma.fillna(method='bfill', inplace=True)
-        series_ma.name = f'{self.portfolio.name}_MA{window}'
+    def roll_avg(self, window, plot=True):
+        series_ma = Transforms.roll_avg(self.portfolio, window)
 
         if plot:
             CGProcessor.plot_series([self.portfolio, series_ma], 
@@ -154,99 +127,14 @@ class CGProcessor:
                         title=f"{series.name}+Mean vs. Time")
             
         return s_m
-
-    @staticmethod
-    def sharpe_ratio(series_dr):
-        adr, sddr = series_dr.mean(), series_dr.std()
-
-        sr = np.sqrt(252)*adr/sddr # we use risk-free rate = 0
-        
-        return sr
-
-    ######################
-    ## STATISTICS TESTS ##
-    ######################
-
-    @staticmethod
-    def test_stationarity(series, pct='1%'):
-        # We must observe significant p-value to convince ourselves that the series is stationary
-        results = adfuller(series, store=True, regresults=True)
-        t_stat = results[0]
-
-        try:
-            cutoff = results[2][pct]
-        except:
-            raise('Pct must be 1%, 5%, or 10%, but was given: ', pct)
-            
-        confidence = str(100 - int(pct[:-1]))+'%'
-
-        if t_stat < cutoff:
-            print(f't-stat = {t_stat}: The series {series.name} is stationary with confidence level ', confidence)
-            return True
-        else:
-            print(f't-stat = {t_stat} The series {series.name} is not stationary with confidence level ', confidence)
-            return False
-
-    @staticmethod
-    def is_coint(series_1, series_2):
-        """
-            Perform Cointegrated Augmented Dickey-Fuller test.
-            
-            1) Determine optimal hedge ratio between two stocks using Ordinary Least Squares regression.
-            
-            2) Test for stationarity of residuals (Z)
-            
-            2) a. If the random variable Z is stationary, then it is order 1 integrable
-            
-            3) Check that 
-            
-            https://towardsdatascience.com/constructing-cointegrated-cryptocurrency-portfolios-d0a27922891e
-            https://letianzj.github.io/cointegration-pairs-trading.html
-        """
-        results = sm.OLS(series_2, series_1).fit()
-        beta = results.params[series_1.name]
-
-        Z = series_2 - beta * series_1
-
-        is_stationary = CGProcessor.test_stationarity(Z)
-
-        if not is_stationary:
-            return False
-        
-        return coint(series_1, series_2)
-
-
-    ##############
-    ## TIMEZONE ##
-    ##############
-
-    @staticmethod
-    def to_timezone(dtobj, trg_tz):
-        trg_tzobj = trg_tz if type(trg_tz) is str else pytz.timezone(trg_tz)
-        return dtobj.astimezone(trg_tzobj)
-
-
-    @staticmethod
-    def from_tmsp(tmsp, trg_tz, short=False):
-        trg_tzobj = trg_tz if type(trg_tz)!=str else pytz.timezone(trg_tz)
-        if not type(tmsp) is int: tmsp = tmsp.timestamp()
-        tmsp = tmsp/1000 if short else tmsp
-        return datetime.datetime.fromtimestamp(tmsp, trg_tzobj)
-
-    @staticmethod
-    def get_loc_time():
-        return datetime.datetime.now()
-
-    @staticmethod
-    def get_utc_time():
-        return datetime.datetime.utcnow()
+    
 
     ################
     ## GENERATORS ##
     ################
 
     @staticmethod
-    def series_to_moving_feats(series, ma_lookbacks, plot=False):
+    def series_to_df_feats(series, ma_lookbacks, plot=False):
         """
             Extract a dataframe of moving fixed features from a timeseries
         """
@@ -254,11 +142,11 @@ class CGProcessor:
         df = series.to_frame()
 
         for lookback_wind in ma_lookbacks:
-            series_w = CGProcessor.take_roll_avg(series, lookback_wind, plot=False)
+            series_w = Transforms.roll_avg(series, lookback_wind)
             df = df.join(series_w.to_frame())
 
-        df = df.join(CGProcessor.cum_ret(series))
-        df = df.join(CGProcessor.daily_ret(series))
+        df = df.join(Transforms.cum_ret(series))
+        df = df.join(Transforms.daily_ret(series))
 
         if plot:
             CGProcessor.plot_df(df[list(df.columns)[:len(ma_lookbacks)+1]], title=f'{series.name} MAs vs. Time')
@@ -285,7 +173,7 @@ class CGProcessor:
         working_series_seq = copy.deepcopy(series_seq)
 
         for series in working_series_seq:
-            series.index = [CGProcessor.from_tmsp(ind, timezone.utc, short=True) for ind in series.index]
+            series.index = [Time.from_tmsp(ind, timezone.utc, short=True) for ind in series.index]
 
         plt.clf()
         plt.figure(figsize=(15,7))
