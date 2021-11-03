@@ -93,30 +93,6 @@ class Processor:
     ## TRANSFORMS ##
     ################
 
-    @staticmethod
-    def differentiate(series):
-        series_d = series.diff()[1:]
-        series_d.name = f'{series.name}_D'
-        return series_d
-
-    @staticmethod
-    def integrate(series):
-        series_i = series.cumsum()
-        series_i.name = f'{series.name}_I'
-        return series_i
-
-    @staticmethod
-    def daily_ret(series):
-        series_dr = (series/series.shift(1) - 1)
-        series_dr.name = f'{series.name}_DR'
-        return series_dr
-
-    @staticmethod
-    def cum_ret(series):
-        series_cr = series/series.iloc[0] - 1
-        series_cr.name = f'{series.name}_CR'
-        return series_cr
-
     def take_roll_avg(self, window, plot=True):
         series_ma = self.portfolio.rolling(window).mean()
         series_ma.fillna(method='bfill', inplace=True)
