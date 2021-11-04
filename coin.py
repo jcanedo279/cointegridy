@@ -58,3 +58,12 @@ class Coin():
         self.is_good_ = (not coin_is_stationary & coin_returns_is_stationarity)
 
         return self.is_good_
+
+    def __lt__(self, other):
+         return self.name_ < other.name_
+
+    def __repr__(self):
+        return "Coin: " + str(self.name_)
+
+    def __str__(self):
+        return "Coin: " + str(self.name_)
