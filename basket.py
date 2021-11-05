@@ -43,6 +43,8 @@ import statsmodels.api as sm
 from processing import *
 from bin import Statistics as stat
 
+from statsmodels.tsa.stattools import coint
+
 class Basket():
 
     def __init__(self, coins, target, processor, method='linear_regression'):
@@ -169,3 +171,9 @@ class Basket():
                 colors=['blue', 'red', 'green', 'green'])
 
         return self.upper_band_, self.lower_band_
+
+    def __repr__(self):
+        return "Basket:" + str(self.coins_)
+
+    def __str__(self):
+        return "Basket:" + str(self.coins_)
