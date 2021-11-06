@@ -1,8 +1,8 @@
+import sys
 import numpy as np
 import sys
 import os
 import pandas as pd
-# import backtester
 import datetime
 from datetime import timezone
 import matplotlib.pyplot as plt
@@ -10,19 +10,17 @@ from datetime import timezone
 import copy
 from urllib.parse import urljoin, urlencode
 import requests
-import math
-
-
 from dotenv import load_dotenv
-
-from bin import Statistics, Transforms
-
-from bin.Time import Time
-
 from pycoingecko import CoinGeckoAPI
+import math
+# import backtester
 
-from bin.util import BinanceException
-
+# Custom imports
+sys.path.append("..") # Adds higher directory to python modules path.
+from utils import stats, transforms
+from utils.time import Time
+from utils.util import BinanceException
+sys.path.pop() 
 
 ENV_PATH = '.env'
 
@@ -50,8 +48,6 @@ API_TO_ROUTES = {
 API_TO_HEADERS = {
     'bnc': lambda api_key: {'X-MBX-APIKEY': api_key}
 }
-
-
 
 class Processor:
     
@@ -166,16 +162,12 @@ class Processor:
             Returns: A list of prices
         """
         return [price for _, price in self.id_to_curr_tmsp_seq(id, limit=limit)]
-
-    
-    
-    
     
     ## TODO: FIX THESE
 
     @staticmethod
     def id_to_df(cg, idx, start_date, end_date, plot=False):
-        market = CGProcessor.id_to_tmsp_seq(cg, idx, start_date, end_date)
+        market = cg.id_to_tmsp_seq(cg, idx, start_date, end_date)
         tmsps, prices = list(zip(*market))
 
         df = pd.DataFrame(index=tmsps)
@@ -196,7 +188,7 @@ class Processor:
         dfs = []
     
         for idx in ids:
-            market_df = Processor.id_to_df(self.cg, idx, start_date, end_date)
+            market_df = self.id_to_df(self.cg, idx, start_date, end_date)
             market_df.columns = [idx]
             dfs.append(market_df)
 
@@ -207,12 +199,6 @@ class Processor:
         self.data = df
 
         return df
-    
-    
-    
-    
-    
-    
     
     ## TODO: 
         
@@ -231,7 +217,7 @@ class Processor:
         dfs = []
     
         for idx in ids:
-            market_df = CGProcessor.id_to_df(self.cg, idx, start_date, end_date)
+            market_df = self.id_to_df(self.cg, idx, start_date, end_date)
             market_df.columns = [idx]
             dfs.append(market_df)
 
@@ -267,14 +253,14 @@ class Processor:
                                                     to_timestamp=end_tmsp)['prices']
     
     @staticmethod
-    def id_to_prices(cg, idx, start_date, end_date):
-        prices = CGProcessor.id_to_tmsp_seq(cg, idx, start_date, end_date)
+    def id_to_prices(idx, start_date, end_date):
+        prices = Processor.id_to_tmsp_seq(idx, start_date, end_date)
         
         return np.array([price[1] for price in prices])
     
     @staticmethod
     def id_to_df(cg, idx, start_date, end_date, plot=False):
-        market = CGProcessor.id_to_tmsp_seq(cg, idx, start_date, end_date)
+        market = cg.id_to_tmsp_seq(cg, idx, start_date, end_date)
         tmsps, prices = list(zip(*market))
 
         df = pd.DataFrame(index=tmsps)
@@ -299,7 +285,7 @@ class Processor:
     ################
 
     def roll_avg(self, window, plot=True):
-        series_ma = Transforms.roll_avg(self.portfolio, window)
+        series_ma = transforms.roll_avg(self.portfolio, window)
 
         if plot:
             Processor.plot_series([self.portfolio, series_ma], 
@@ -347,11 +333,11 @@ class Processor:
         df = series.to_frame()
 
         for lookback_wind in ma_lookbacks:
-            series_w = Transforms.roll_avg(series, lookback_wind)
+            series_w = transforms.roll_avg(series, lookback_wind)
             df = df.join(series_w.to_frame())
 
-        df = df.join(Transforms.cum_ret(series))
-        df = df.join(Transforms.daily_ret(series))
+        df = df.join(transforms.cum_ret(series))
+        df = df.join(transforms.daily_ret(series))
 
         if plot:
             Processor.plot_df(df[list(df.columns)[:len(ma_lookbacks)+1]], title=f'{series.name} MAs vs. Time')
