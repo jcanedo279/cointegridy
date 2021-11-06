@@ -265,6 +265,3 @@ class Backtester():
             trader.execute_strategy(time)
 
         return None
-
-        
-
