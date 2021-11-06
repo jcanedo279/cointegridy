@@ -2,7 +2,7 @@
 # Writing my own
 from datetime import timedelta
 from basket import Basket
-import exceptions
+from bin import exceptions
 
 #############################
 ## Backtesting Environment ##
@@ -45,7 +45,7 @@ class Event():
         self.isTrue = False
 
         if direction not in ['over','under']:
-            raise exceptions.invalidDirection('You tried to enter an event with a direction besides :\'above\', \'below\'')
+            raise exceptions.invalidDirection()
         
     def check(self,tmsp,prevstamp):
         # The .loc expressions for previous stamp need to be corrected so it can get the previous timestamp dynamically. I'm just dumb and don't know how to do that.
@@ -102,6 +102,7 @@ class Trader():
         self.positions = {x : 0 for x in self.basket.coins_}
         self.open_position = False
         self.dollars_per_trade = self.funds / 4
+        self.logfile = None
 
     def add_funds(self,cash):
         '''
@@ -109,6 +110,13 @@ class Trader():
         ''' 
         self.funds += cash
     
+    def set_logfile(self,fname):
+        '''
+        Create a file to log data
+        '''
+
+        self.outfile = fname
+
     def set_fees(self,maker,taker):
         '''
         Set up the fee structure associated with a broker
@@ -142,7 +150,7 @@ class Trader():
         elif trade_type in ['sell','short']:
             amount = abs(amount) * -1
         else:
-            raise exceptions.invalidTradeType('you have tried to make a trade besides buy, sell, short or cover.')
+            raise exceptions.invalidTradeType()
 
         #count = int(''.join([x for x in lag if x.isnumeric()]))
         count = int(lag[:-1])
@@ -155,7 +163,7 @@ class Trader():
             delta = timedelta(seconds = count*60)
         
         else:
-            raise exceptions.invalidLag("you have defined a lag besides seconds (s), minutes (m), or hours (h).")
+            raise exceptions.invalidLag()
         
         execution_time = tmsp + delta
             
@@ -166,9 +174,13 @@ class Trader():
         # Calculate fees
 
         if trade_type in ['buy','cover']:
-            self.funds -= (1 + self.fees['taker'])*cost
+            total_cost = (1 + self.fees['taker'])*cost
+            self.funds -=  total_cost
+            self.log(tmsp,self.outfile,f'executed trade: {trade_type} {amount} {asset.name_} for total cost {total_cost}')
         else:
-            self.funds -= (1 + self.fees['maker'])*cost
+            total_cost = (1 + self.fees['maker'])*cost
+            self.funds -= total_cost
+            self.log(tmsp,self.outfile,f'executed trade: {trade_type} {amount} {asset.name_} for total cost {total_cost}')
 
         self.positions[asset] += amount
 
@@ -202,6 +214,10 @@ class Trader():
         Strat execute will return a flag. Based on this flag, the trader will make the associated trades if not already in a position.
         '''
 
+        if not self.logfile:
+            print('Don\'t run a trader without a logfile for now. Retry after calling trader.set_logfile.')
+        
+
         flag = self.strategy.execute()
         if flag[0] == 'N' and not self.open_position:
             if flag[1] == 'L':
@@ -213,6 +229,14 @@ class Trader():
                 self.spread_trade(tmsp,self.dollars_per_trade,'sell')
             else:
                 self.spread_trade(tmsp,self.dollars_per_trade,'cover')
+    
+    def log(self,tmsp,outfile,message=None):
+        
+        with open(outfile,'w+') as f:
+            if message:
+                f.write(str(tmsp) + ': ' + message)
+            else:
+                f.write(f'{tmsp}: Holdings{self.positions}\nLiquidity: {self.funds} USDT \n_____________\n')
     
     def __str__(self):
         return f'Trader object \nHoldings: {self.positions}\nLiquidity: {self.funds} USDT'
@@ -227,7 +251,7 @@ class Backtester():
     def select_basket(self,basket):
         self.basket = basket
     
-    def run(self):
+    def run(self,logfile):
         '''
         Execute backtesting over the time interval
 
@@ -257,6 +281,7 @@ class Backtester():
         trader = Trader(self.basket)
         trader.add_funds(200)
         trader.strat_init(placeholder,placeholder,placeholder)
+        trader.set_logfile(logfile)
 
         trader.set_fees(placeholder,placeholder)
 
