@@ -158,6 +158,8 @@ class Basket():
         """
         USING BOLLINGER BANDS
 
+        TODO: Should this be a property of basket or trader?
+
         Define bollinger band entry and exit points.
         """
         self.upper_band_ = self.intercept_ + num_stds * self.std_
