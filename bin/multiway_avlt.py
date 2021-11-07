@@ -1,11 +1,12 @@
 # AVL tree implementation in Python
 
-
 import sys
+
+
 
 # Create a tree node
 class TreeNode(object):
-    def __init__(self, parent, key, node_type='root'):
+    def __init__(self, parent, key, node_type='root', linked_node=None):
         
         self.key, self.some_value = key, 10
         
@@ -14,6 +15,9 @@ class TreeNode(object):
         self.left, self.right = None, None
         
         self.height = 1
+        
+        ## A node that this node points to (like another child)
+        self.linked_node = linked_node
         
 
 
@@ -24,20 +28,26 @@ class MultiWayAVLT(object):
         for val in iterable:
             self.insert(val)
         
-    def insert(self, key):
-        self.root = self._insert_node(self.root, key)
+    def insert(self, key, linked_node=None):
+        self.root, new_node = self._insert_node(self.root, key, linked_node=linked_node)
         self.root.node_type = 'root'
+        return new_node
 
     # Function to insert a node
-    def _insert_node(self, root, key, insert_type='root'):
+    def _insert_node(self, root, key, insert_type='root', linked_node=None):
+        """
+            Returns: new_root, inserted_node
+        """
+        inserted = None
 
         # Find the correct location and insert the node
         if not root:
-            return TreeNode(root, key, node_type=insert_type)
+            inserted = TreeNode(root, key, node_type=insert_type, linked_node=linked_node)
+            return inserted, inserted
         elif key < root.key:
-            root.left = self._insert_node(root.left, key, insert_type='left')
+            root.left, inserted = self._insert_node(root.left, key, insert_type='left')
         else:
-            root.right = self._insert_node(root.right, key, insert_type='right')
+            root.right, inserted = self._insert_node(root.right, key, insert_type='right')
 
         root.height = 1 + max(self.getHeight(root.left),
                               self.getHeight(root.right))
@@ -46,18 +56,18 @@ class MultiWayAVLT(object):
         balanceFactor = self.getBalance(root)
         if balanceFactor > 1:
             if key < root.left.key:
-                return self.rightRotate(root)
+                return self.rightRotate(root), inserted
             else:
                 root.left = self.leftRotate(root.left)
-                return self.rightRotate(root)
+                return self.rightRotate(root), inserted
         if balanceFactor < -1:
             if key > root.right.key:
-                return self.leftRotate(root)
+                return self.leftRotate(root), inserted
             else:
                 root.right = self.rightRotate(root.right)
-                return self.leftRotate(root)
+                return self.leftRotate(root), inserted
 
-        return root
+        return root, inserted
     
     
     
