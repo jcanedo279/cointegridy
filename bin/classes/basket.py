@@ -42,7 +42,7 @@ import statsmodels.api as sm
 from statsmodels.tsa.stattools import coint
 
 # Custom Imports
-from .processor import *
+from .processor import Processor
 sys.path.append("..") # Adds higher directory to python modules path.
 from utils import stats as stat
 sys.path.pop() 

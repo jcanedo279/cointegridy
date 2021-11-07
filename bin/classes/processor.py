@@ -16,7 +16,7 @@ import math
 # import backtester
 
 # Custom imports
-sys.path.append("..") # Adds higher directory to python modules path.
+print(sys.path)
 from utils import stats, transforms
 from utils.time import Time
 from utils.util import BinanceException
