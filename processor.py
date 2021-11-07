@@ -55,7 +55,8 @@ API_TO_ROUTES = {
         'ids': '/api/v3/exchangeInfo',
         'time': '/api/v3/time',
         
-        'hist_data': '/api/v3/aggTrades'
+        'hist_data': '/api/v3/aggTrades',
+        'ohlc_data': '/api/v3/klines'
     },
     
     'cg': {
@@ -166,7 +167,7 @@ class Processor:
         if self.api == 'bnc':
             hist_data_url = urljoin(self.base_url, self.routes['hist_data'])
             
-            params = {'symbol': id, 'startTime': int(sT_P)*1000, 'endTime': int(eT_P)*1000}
+            params = {'symbol': id, 'startTime': int(sT_P)*1000, 'endTime': int(eT_P)*1000, 'limit': 1000}
             if limit: params.update({'limit': limit})
             
             data = self.get_request(hist_data_url, params=params)
@@ -223,7 +224,7 @@ class Processor:
     ## CURRENT DATA PROCESSORS ##
     #############################
     
-    def id_to_curr_tmsp_seq(self, id, limit=None):
+    def id_to_curr_tmsp_seq(self, id, limit=1000):
         """
             Returns: A list of (tmsp, price) pairs
         """
