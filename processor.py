@@ -179,6 +179,11 @@ class Processor:
         """
         return [price for _, price in self.id_to_hist_tmsp_seq(id, start_Time, end_Time, limit=limit)]
 
+
+    ###########################
+    ## DAILY DATA PROCESSORS ##
+    ###########################
+
     def id_to_daily_seq(self, _id, start_date, end_date):
         """
             Takes: A crypto id, a start date and an end date
