@@ -242,6 +242,31 @@ class Processor:
         """
         return [price for _, price in self.id_to_curr_tmsp_seq(id, limit=limit)]
 
+
+    ##########################
+    ## OHLC DATA PROCESSORS ##
+    ##########################
+    
+    def id_to_ohlc_seq(self, id, start_Time, end_Time, tmsp_interval="10M", limit=1000):
+        """
+            tmsp_interval: int + {"S", "M", "H" "D"}
+        """
+        
+        if self.api == 'bnc':
+            ohlc_url = self.base_url + self.routes['ohlc_data']
+            
+            start_tmsp, end_tmsp = int(start_Time.get_psx_tmsp())*1000, int(end_Time.get_psx_tmsp())*1000
+            
+            params = {'symbol': id, 'startTime': start_tmsp, 'endTime': end_tmsp, 'interval':'5m', 'limit': limit}
+            
+            data = self.get_request(ohlc_url, params=params)
+            
+            output = [{'open_tmsp':d[0], 'open':d[1], 'high':d[2], 'low':d[3], 'close':d[4], 'vol':d[5], 'close_tmsp':d[6]} for d in data]
+            
+            return output
+    
+    
+    
     
     
     
