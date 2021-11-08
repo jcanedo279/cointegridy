@@ -27,10 +27,8 @@ import sys
 
 # Custom Imports
 from .processor import *
-sys.path.append("..") # Adds higher directory to python modules path.
-from utils import stats
-from utils import transforms
-sys.path.pop() 
+from ..utils import stats
+from ..utils import transforms
 
 class Coin():
 

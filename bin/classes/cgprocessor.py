@@ -9,9 +9,8 @@ from pycoingecko import CoinGeckoAPI
 import copy
 import sys
 
-sys.path.append("..") # Adds higher directory to python modules path.
-from utils import stats, time, transforms
-sys.path.pop()
+from ..utils import stats, transforms
+from . import time
 
 class CGProcessor:
     

@@ -43,9 +43,7 @@ from statsmodels.tsa.stattools import coint
 
 # Custom Imports
 from .processor import Processor
-sys.path.append("..") # Adds higher directory to python modules path.
-from utils import stats as stat
-sys.path.pop() 
+from ..utils import stats as stat
 
 
 class Basket():

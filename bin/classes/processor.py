@@ -21,11 +21,8 @@ import math
 # import backtester
 
 # Custom imports
-print(sys.path)
-from utils import stats, transforms
-from utils.time import Time
-from utils.util import BinanceException
-sys.path.pop() 
+from .time import Time
+from ..utils import stats, transforms
 
 ENV_PATH = '.env'
 
@@ -36,6 +33,8 @@ API_TO_ENV_NAME = {
     'bnc': 'BINANCE',
     'cg': 'COINGECKO'
 }
+
+ZERO = timedelta(0)
 
 def api_to_env_names(api):
     assert api in API_TO_ENV_NAME
@@ -245,8 +244,6 @@ class Processor:
             Returns: A list of prices
         """
         return [price for _, price in self.id_to_curr_tmsp_seq(id, limit=limit)]
-<<<<<<< HEAD:bin/classes/processor.py
-=======
 
 
     ##########################
@@ -275,8 +272,6 @@ class Processor:
     
     
     
-    
->>>>>>> 775c9a225070ec93fa5bafca9fc9f6deb7365414:processor.py
     
     ## TODO: FIX THESE
 
@@ -500,5 +495,18 @@ class Processor:
         plt.title(title)
         plt.show()
 
+class BinanceException(Exception):
+    def __init__(self, status_code, data):
 
-    
+        self.status_code = status_code
+        if data:
+            self.code = data['code']
+            self.msg = data['msg']
+        else:
+            self.code = None
+            self.msg = None
+        message = f"{status_code} [{self.code}] {self.msg}"
+
+        # Python 2.x
+        # super(BinanceException, self).__init__(message)
+        super().__init__(message)
