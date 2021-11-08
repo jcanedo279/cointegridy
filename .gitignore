@@ -135,3 +135,5 @@ dmypy.json
 ############
 
 important.txt
+requirements.txt
+get-pip.py

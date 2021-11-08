@@ -1,8 +1,6 @@
-
 import pytz
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta, tzinfo
 import time
-
     
 TIMEZONES = pytz.all_timezones_set
     
@@ -88,28 +86,17 @@ class Time:
         if type(from_tz) is str: assert from_tz in TIMEZONES
         tzobj = pytz.timezone(from_tz) if type(from_tz) is str else from_tz
         return datetime.fromtimestamp(tmsp, tzobj).astimezone(UTC_TZOBJ).timestamp()
-    
 
 
+class UTC(tzinfo):
+    """UTC"""
 
+    def utcoffset(self, dt):
+        return ZERO
 
+    def tzname(self, dt):
+        return "UTC"
 
-
-def test_1():
-    loc_time = datetime.now().timestamp()
-    utc_time = Time.arb_tmsp_to_utc_tmsp(loc_time, NAT_TZ)
-    
-    ref_utc_time = Time.utcnow()
-    
-    assert abs(ref_utc_time - utc_time) < 5
-
-
-
-def test_driver():
-    test_1()
-    
-    
-if __name__ == '__main__':
-    test_driver()
-
-
+    def dst(self, dt):
+        return ZERO
+        

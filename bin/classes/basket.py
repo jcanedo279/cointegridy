@@ -33,17 +33,18 @@ Methods:
 # TODO: Should prices or residual data be stored in an attribute?
 """
 
+import sys
 import pandas as pd
 import numpy as np
-
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import MinMaxScaler
 import statsmodels.api as sm
-
-from processing import *
-from bin import Statistics as stat
-
 from statsmodels.tsa.stattools import coint
+
+# Custom Imports
+from .processor import Processor
+from ..utils import stats as stat
+
 
 class Basket():
 

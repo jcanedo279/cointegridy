@@ -1,8 +1,8 @@
+import sys
 import numpy as np
 import sys
 import os
 import pandas as pd
-# import backtester
 import datetime
 from datetime import timezone
 import matplotlib.pyplot as plt
@@ -16,15 +16,13 @@ from datetime import date, timedelta
 
 
 from dotenv import load_dotenv
-
-from bin import Statistics, Transforms
-
-from bin.Time import Time
-
 from pycoingecko import CoinGeckoAPI
+import math
+# import backtester
 
-from bin.util import BinanceException
-
+# Custom imports
+from .time import Time
+from ..utils import stats, transforms
 
 ENV_PATH = '.env'
 
@@ -35,6 +33,8 @@ API_TO_ENV_NAME = {
     'bnc': 'BINANCE',
     'cg': 'COINGECKO'
 }
+
+ZERO = timedelta(0)
 
 def api_to_env_names(api):
     assert api in API_TO_ENV_NAME
@@ -78,8 +78,6 @@ API_TO_HEADERS = {
 TIMED_APIS = {
     'bnc'
 }
-
-
 
 class Processor:
     
@@ -275,12 +273,11 @@ class Processor:
     
     
     
-    
     ## TODO: FIX THESE
 
     @staticmethod
     def id_to_df(cg, idx, start_date, end_date, plot=False):
-        market = CGProcessor.id_to_tmsp_seq(cg, idx, start_date, end_date)
+        market = cg.id_to_tmsp_seq(cg, idx, start_date, end_date)
         tmsps, prices = list(zip(*market))
 
         df = pd.DataFrame(index=tmsps)
@@ -301,7 +298,7 @@ class Processor:
         dfs = []
     
         for idx in ids:
-            market_df = Processor.id_to_df(self.cg, idx, start_date, end_date)
+            market_df = self.id_to_df(self.cg, idx, start_date, end_date)
             market_df.columns = [idx]
             dfs.append(market_df)
 
@@ -312,12 +309,6 @@ class Processor:
         self.data = df
 
         return df
-    
-    
-    
-    
-    
-    
     
     ## TODO: 
         
@@ -336,7 +327,7 @@ class Processor:
         dfs = []
     
         for idx in ids:
-            market_df = CGProcessor.id_to_df(self.cg, idx, start_date, end_date)
+            market_df = self.id_to_df(self.cg, idx, start_date, end_date)
             market_df.columns = [idx]
             dfs.append(market_df)
 
@@ -372,14 +363,14 @@ class Processor:
                                                     to_timestamp=end_tmsp)['prices']
     
     @staticmethod
-    def id_to_prices(cg, idx, start_date, end_date):
-        prices = CGProcessor.id_to_tmsp_seq(cg, idx, start_date, end_date)
+    def id_to_prices(idx, start_date, end_date):
+        prices = Processor.id_to_tmsp_seq(idx, start_date, end_date)
         
         return np.array([price[1] for price in prices])
     
     @staticmethod
     def id_to_df(cg, idx, start_date, end_date, plot=False):
-        market = CGProcessor.id_to_tmsp_seq(cg, idx, start_date, end_date)
+        market = cg.id_to_tmsp_seq(cg, idx, start_date, end_date)
         tmsps, prices = list(zip(*market))
 
         df = pd.DataFrame(index=tmsps)
@@ -404,7 +395,7 @@ class Processor:
     ################
 
     def roll_avg(self, window, plot=True):
-        series_ma = Transforms.roll_avg(self.portfolio, window)
+        series_ma = transforms.roll_avg(self.portfolio, window)
 
         if plot:
             Processor.plot_series([self.portfolio, series_ma], 
@@ -452,11 +443,11 @@ class Processor:
         df = series.to_frame()
 
         for lookback_wind in ma_lookbacks:
-            series_w = Transforms.roll_avg(series, lookback_wind)
+            series_w = transforms.roll_avg(series, lookback_wind)
             df = df.join(series_w.to_frame())
 
-        df = df.join(Transforms.cum_ret(series))
-        df = df.join(Transforms.daily_ret(series))
+        df = df.join(transforms.cum_ret(series))
+        df = df.join(transforms.daily_ret(series))
 
         if plot:
             Processor.plot_df(df[list(df.columns)[:len(ma_lookbacks)+1]], title=f'{series.name} MAs vs. Time')
@@ -504,5 +495,18 @@ class Processor:
         plt.title(title)
         plt.show()
 
+class BinanceException(Exception):
+    def __init__(self, status_code, data):
 
-    
+        self.status_code = status_code
+        if data:
+            self.code = data['code']
+            self.msg = data['msg']
+        else:
+            self.code = None
+            self.msg = None
+        message = f"{status_code} [{self.code}] {self.msg}"
+
+        # Python 2.x
+        # super(BinanceException, self).__init__(message)
+        super().__init__(message)

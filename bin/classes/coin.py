@@ -23,10 +23,12 @@ Methods:
 
 import pandas as pd
 import numpy as np
+import sys
 
-from processing import *
-from bin import Statistics as stat
-from bin import Transforms as bumblebee
+# Custom Imports
+from .processor import *
+from ..utils import stats
+from ..utils import transforms
 
 class Coin():
 
@@ -51,9 +53,9 @@ class Coin():
 
         """
 
-        coin_is_stationary = stat.is_stationary(prices)
-        coin_returns = bumblebee.differentiate(prices)
-        coin_returns_is_stationarity = stat.is_stationary(coin_returns)
+        coin_is_stationary = stats.is_stationary(prices)
+        coin_returns = transforms.differentiate(prices)
+        coin_returns_is_stationarity = stats.is_stationary(coin_returns)
 
         self.is_good_ = (not coin_is_stationary & coin_returns_is_stationarity)
 

@@ -5,11 +5,12 @@ import pandas as pd
 import datetime
 import matplotlib.pyplot as plt
 from datetime import timezone
-import copy
-
-from bin import Statistics, Tests, Time, Transforms
-
 from pycoingecko import CoinGeckoAPI
+import copy
+import sys
+
+from ..utils import stats, transforms
+from . import time
 
 class CGProcessor:
     
@@ -95,7 +96,7 @@ class CGProcessor:
     ################
 
     def roll_avg(self, window, plot=True):
-        series_ma = Transforms.roll_avg(self.portfolio, window)
+        series_ma = transforms.roll_avg(self.portfolio, window)
 
         if plot:
             CGProcessor.plot_series([self.portfolio, series_ma], 
@@ -142,11 +143,11 @@ class CGProcessor:
         df = series.to_frame()
 
         for lookback_wind in ma_lookbacks:
-            series_w = Transforms.roll_avg(series, lookback_wind)
+            series_w = transforms.roll_avg(series, lookback_wind)
             df = df.join(series_w.to_frame())
 
-        df = df.join(Transforms.cum_ret(series))
-        df = df.join(Transforms.daily_ret(series))
+        df = df.join(transforms.cum_ret(series))
+        df = df.join(transforms.daily_ret(series))
 
         if plot:
             CGProcessor.plot_df(df[list(df.columns)[:len(ma_lookbacks)+1]], title=f'{series.name} MAs vs. Time')
@@ -172,8 +173,9 @@ class CGProcessor:
     def plot_series(series_seq, x_label='Time', y_label='Value', linestyles=None, colors=None, title=None):
         working_series_seq = copy.deepcopy(series_seq)
 
-        for series in working_series_seq:
-            series.index = [Time.from_tmsp(ind, timezone.utc, short=True) for ind in series.index]
+        # TODO: Fix this
+        # for series in working_series_seq:
+            # series.index = [time.Time.from_tmsp(ind, timezone.utc, short=True) for ind in series.index]
 
         plt.clf()
         plt.figure(figsize=(15,7))

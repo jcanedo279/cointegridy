@@ -2,6 +2,7 @@
     A collection of transformation utility functions
 """
 
+import numpy as np
 
 #######################
 ## SERIES TRANSFORMS ##
@@ -38,4 +39,10 @@ def roll_avg(series, window):
     series_ma.name = f'{series.name}_MA{window}'
     return series_ma
     
+def sigmoid(x):
+    return 1/(1 + np.exp(-1*x))
     
+def softmax(x):
+    """Compute softmax values for each sets of scores in x."""
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum(axis=0)
