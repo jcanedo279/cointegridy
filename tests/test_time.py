@@ -1,6 +1,8 @@
-from Time import Time
-import time
+from ..bin.classes.time import Time
 from datetime import datetime, timezone
+
+NAT_TZ = 'America/Los_Angeles'
+
 
 
 def test_1():
@@ -9,21 +11,13 @@ def test_1():
     
     ref_utc_time = Time.utcnow()
     
-    assert abs(ref_utc_time - utc_time) < 5
-
-def test_driver():
-    test_1()
+    print(utc_time, ref_utc_time)
     
-def test_1():
+def test_2():
     
     ### test that utc
     # print(time.time(), datetime.now(timezone.utc), datetime.utcnow())
     print(datetime.now(timezone.utc).timestamp(), datetime.utcnow().timestamp())
-    pass
-
-def test_2():
-    
-    
     pass
 
 
@@ -33,11 +27,10 @@ def test_2():
 ## Driver ##
 ############
 
-def main():
+def test_driver():
     test_1()
     test_2()
-    test_driver()
 
 if __name__ == '__main__':
     
-    main()
+    test_driver()

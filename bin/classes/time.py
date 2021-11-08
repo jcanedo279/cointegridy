@@ -1,5 +1,5 @@
 import pytz
-from datetime import datetime, timezone, timedelta, tzinfo
+from datetime import date, datetime, timezone, timedelta, tzinfo
 import time
     
 TIMEZONES = pytz.all_timezones_set
@@ -86,8 +86,44 @@ class Time:
         if type(from_tz) is str: assert from_tz in TIMEZONES
         tzobj = pytz.timezone(from_tz) if type(from_tz) is str else from_tz
         return datetime.fromtimestamp(tmsp, tzobj).astimezone(UTC_TZOBJ).timestamp()
+    
+    
+    ####################
+    ## TIME ITERATORS ##
+    ####################
+    
+    @staticmethod
+    def iter_date(start_date, end_date, conv=False):
+        """
+            start_date, end_date in (YYYY,M,D) format
+            conv: False -> string format return, True -> int tuple format return
+            
+            Returns: generator in (D,M,YYYY) format
+        """
+        
+        def norm_date(d):
+            return d if len(d)==2 else f'0{d}'
+        
+        s_y, s_m, s_d = [str(v) for v in start_date]
+        e_y, e_m, e_d = [str(v) for v in end_date]
+        
+        s_m, s_d, e_m, e_d = norm_date(s_m), norm_date(s_d), norm_date(e_m), norm_date(e_d)
+        
+        start_date = date(int(s_y), int(s_m), int(s_d))
+        end_date = date(int(e_y), int(e_m), int(e_d))
+        delta = timedelta(days=1)
+        
+        while start_date <= end_date:
+            s_d, s_m = f'{start_date.day}', f'{start_date.month}'
+            if conv:
+                yield (start_date.day, start_date.month, start_date.year)
+            else:
+                yield f'{norm_date(s_d)}-{norm_date(s_m)}-{start_date.year}'
+            start_date += delta
+    
 
 
+ZERO = timedelta(0)
 class UTC(tzinfo):
     """UTC"""
 

@@ -12,8 +12,6 @@ from urllib.parse import urljoin, urlencode
 import requests
 import math
 
-from datetime import date, timedelta
-
 
 from dotenv import load_dotenv
 from pycoingecko import CoinGeckoAPI
@@ -33,8 +31,6 @@ API_TO_ENV_NAME = {
     'bnc': 'BINANCE',
     'cg': 'COINGECKO'
 }
-
-ZERO = timedelta(0)
 
 def api_to_env_names(api):
     assert api in API_TO_ENV_NAME
@@ -192,35 +188,12 @@ class Processor:
             daily_url = self.base_url + self.routes['daily_data'](_id)
             
             daily_seq = []
-            for date in Processor.iter_date(start_date, end_date):
+            for date in Time.iter_date(start_date, end_date):
                 data = self.get_request(daily_url, params={'date':date, 'localization':'false'})
                 if not data: continue
                 daily_seq.append((Time.date_to_Time(int(date[6:]), int(date[3:5]), int(date[:2])).get_psx_tmsp(), data["market_data"]['current_price']['usd']))
         
             return daily_seq
-    
-    @staticmethod
-    def iter_date(start_date, end_date):
-        """
-            start_date, end_date in (YYYY,M,D) format
-        """
-        
-        def norm_date(d):
-            return d if len(d)==2 else f'0{d}'
-        
-        s_y, s_m, s_d = [str(v) for v in start_date]
-        e_y, e_m, e_d = [str(v) for v in end_date]
-        
-        s_m, s_d, e_m, e_d = norm_date(s_m), norm_date(s_d), norm_date(e_m), norm_date(e_d)
-        
-        start_date = date(int(s_y), int(s_m), int(s_d))
-        end_date = date(int(e_y), int(e_m), int(e_d))
-        delta = timedelta(days=1)
-        
-        while start_date <= end_date:
-            s_d, s_m = f'{start_date.day}', f'{start_date.month}'
-            yield f'{norm_date(s_d)}-{norm_date(s_m)}-{start_date.year}'
-            start_date += delta
 
 
     #############################
@@ -252,7 +225,7 @@ class Processor:
     
     def id_to_ohlc_seq(self, id, start_Time, end_Time, tmsp_interval="10M", limit=1000):
         """
-            tmsp_interval: int + {"S", "M", "H" "D"}
+            tmsp_interval: int + {"S", "m", "h" "D"}
         """
         
         if self.api == 'bnc':
@@ -260,11 +233,11 @@ class Processor:
             
             start_tmsp, end_tmsp = int(start_Time.get_psx_tmsp())*1000, int(end_Time.get_psx_tmsp())*1000
             
-            params = {'symbol': id, 'startTime': start_tmsp, 'endTime': end_tmsp, 'interval':'5m', 'limit': limit}
+            params = {'symbol': id, 'startTime': start_tmsp, 'endTime': end_tmsp, 'interval':tmsp_interval, 'limit': limit}
             
             data = self.get_request(ohlc_url, params=params)
             
-            output = [{'open_tmsp':d[0], 'open':d[1], 'high':d[2], 'low':d[3], 'close':d[4], 'vol':d[5], 'close_tmsp':d[6]} for d in data]
+            output = [{'open_tmsp':float(d[0])/1000, 'open':float(d[1]), 'high':float(d[2]), 'low':float(d[3]), 'close':float(d[4]), 'vol':float(d[5]), 'close_tmsp':float(d[6])/1000} for d in data]
             
             return output
     
@@ -494,6 +467,8 @@ class Processor:
         plt.legend([series.name for series in working_series_seq])
         plt.title(title)
         plt.show()
+
+
 
 class BinanceException(Exception):
     def __init__(self, status_code, data):
