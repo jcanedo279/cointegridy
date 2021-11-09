@@ -46,6 +46,9 @@ class Time:
         except Exception as e:
             print(f'trg_tz={trg_tz} is not a valid target timezone, enter a valid string or a valid pytz timezone object')
     
+    @staticmethod
+    def sleep(secs=10):
+        time.sleep(secs)
     
     @staticmethod
     def timezones():

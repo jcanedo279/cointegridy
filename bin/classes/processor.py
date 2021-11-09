@@ -32,6 +32,8 @@ API_TO_ENV_NAME = {
     'cg': 'COINGECKO'
 }
 
+MAX_USED_WEIGHT_1M = 1099
+
 def api_to_env_names(api):
     assert api in API_TO_ENV_NAME
     name = API_TO_ENV_NAME[api]
@@ -49,6 +51,7 @@ API_TO_ROUTES = {
         'base': 'https://api.binance.com',
         
         'ids': '/api/v3/exchangeInfo',
+        'limits': '/api/v3/exchangeInfo',
         'time': '/api/v3/time',
         
         'hist_data': '/api/v3/aggTrades',
@@ -87,34 +90,69 @@ class Processor:
         akl, ak, pk = api_to_env_names(api)
         self.api_key_label, self.api_key, self.private_key = os.getenv(akl), os.getenv(ak), os.getenv(pk)
         
+        self.lifetime_requests, self.next_available_tmsp = 0, 0
         
         self.routes = API_TO_ROUTES[api]
         self.api_headers = API_TO_HEADERS[api](self.api_key)
         
         self.base_url = self.routes['base']
 
-        if api in TIMED_APIS:
-            print(f'The epoch of the {self.api} processor is {Time.get_epoch()}')
-            print(f'The latency of the {self.api} processor is {self.get_api_latency()}')
+        # if api in TIMED_APIS:
+        #     print(f'The epoch of the {self.api} processor is {Time.get_epoch()}')
+        #     print(f'The latency of the {self.api} processor is {self.get_api_latency()}')
         
         # self.timeshift = self.get_api_timeshift()
-        
     
     
     ##################
     ## API INTERACE ##
     ##################
     
-    def get_request(self, url, params=None):
-        r = requests.get(url, params=params)
-        if r.status_code == 200:
-            # print(json.dumps(r.json(), indent=2))
-            data = r.json()
-            return data
-            
-        elif self.api == 'bnc':
-            raise BinanceException(status_code=r.status_code, data=r.json())
+    def get_request(self, url, params=None, return_status=False, re_request=True, max_re_requests=7, re_request_sleep=10):
         
+        cur_request = 0
+        if not re_request: max_re_requests=1 
+        data_out, status = {}, 666
+        
+        while cur_request<max_re_requests:
+            cur_request += 1
+            self.lifetime_requests += 1
+            
+            if Time.utcnow() < self.next_available_tmsp:
+                if not re_request: break
+                Time.sleep(re_request_sleep)
+                continue
+            
+            r = requests.get(url, params=params)
+            headers, status = r.headers, r.status_code
+            
+            # previous_weight = headers['x-mbx-used-weight']
+            used_weight_1m = headers['x-mbx-used-weight-1m']
+            # connection = headers['Connection']
+            
+            ### 418 -> IP BAN       429 -> RATE LIMIT VIOLATION
+            if self.api=='bnc' and status in {418, 429}:
+                retry_after = headers['Retry-After'] if status==429 else 60*60*24*3
+                self.next_available_tmsp = Time.utcnow() + retry_after + 1
+                if not re_request: break
+                continue
+            
+            if status == 200:
+                data_out = r.json()
+                break
+                
+            elif self.api == 'bnc':
+                raise BinanceException(status_code=status, data=r.json())
+            
+            if not re_request: break
+        
+        
+        if return_status:
+            return data_out, status
+        return data_out
+        
+        
+    
     
     ######################
     ## BUILTIN API UTIL ##
@@ -129,6 +167,12 @@ class Processor:
             id_url = self.base_url+self.routes['ids']
             data = self.get_request(id_url, params=None)
             return [asset['id'] for asset in data]
+        
+    def get_api_limits(self, return_status=False):
+        limits_url = self.base_url + self.routes['limits']
+        response = self.get_request(limits_url, return_status=return_status)
+        if return_status: return response[0]['rateLimits'], response[1]
+        return response['rateLimits']
 
     
     #######################
@@ -152,7 +196,7 @@ class Processor:
     ## HISTORICAL DATA PROCESSORS ##
     ################################
     
-    def id_to_hist_tmsp_seq(self, id, start_Time, end_Time, limit=None):
+    def id_to_hist_tmsp_seq(self, id, start_Time, end_Time, limit=1000):
         """
             Returns: A list of (tmsp, price) pairs
         """
@@ -161,13 +205,12 @@ class Processor:
         if self.api == 'bnc':
             hist_data_url = urljoin(self.base_url, self.routes['hist_data'])
             
-            params = {'symbol': id, 'startTime': int(sT_P)*1000, 'endTime': int(eT_P)*1000, 'limit': 1000}
-            if limit: params.update({'limit': limit})
+            params = {'symbol': id, 'startTime': int(sT_P)*1000, 'endTime': int(eT_P)*1000, 'limit': limit}
             
             data = self.get_request(hist_data_url, params=params)
             return [(float(datum['T'])/1000, float(datum['p'])) for datum in data]
         
-    def id_to_hist_prices(self, id, start_Time, end_Time, limit=None):
+    def id_to_hist_prices(self, id, start_Time, end_Time, limit=1000):
         """
             Returns: A list of prices
         """
@@ -208,11 +251,11 @@ class Processor:
         if self.api == 'bnc':
             curr_data_url = urljoin(self.base_url, self.routes['hist_data'])
             
-            params = {'symbol': id, 'limit': limit} if limit else {'symbol': id}
+            params = {'symbol': id, 'limit': limit}
             data = self.get_request(curr_data_url, params=params)
             return [(float(datum['T'])/1000, float(datum['p'])) for datum in data]
         
-    def id_to_curr_prices(self, id, limit=None):
+    def id_to_curr_prices(self, id, limit=1000):
         """
             Returns: A list of prices
         """
