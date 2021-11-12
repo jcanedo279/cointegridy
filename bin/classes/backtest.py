@@ -42,7 +42,6 @@ class Event():
     def __init__(self,target,direction,processor):
         self.processor = processor
         self.target = target
-        self.isTrue = False
 
         if direction not in ['over','under']:
             raise exceptions.invalidDirection()
@@ -91,13 +90,18 @@ class Strategy():
 
 class Trader():
 
-    # Represents one agent trading on a basket
+    '''
+    A Trader represents one agent making decisions based on the spread associated with one basket of coins. 
 
+    Traders have money, holdings, a latency to their exchange, and a broker with a fee structure. 
+
+    
+    '''
     def __init__(self,basket):
 
         # Object used to stream data
         self.funds = 0
-        self.fees = {'maker':0,'taker':0}
+        self.fees = {'maker':0,'taker':0,'short':0}
         self.basket = basket
         self.positions = {x : 0 for x in self.basket.coins_}
         self.open_position = False
@@ -110,14 +114,16 @@ class Trader():
         ''' 
         self.funds += cash
     
+    def set_dollars_per_trade(self,amt):
+        self.dollars_per_trade = amt
+    
     def set_logfile(self,fname):
         '''
         Create a file to log data
         '''
-
         self.outfile = fname
 
-    def set_fees(self,maker,taker):
+    def set_fees(self,maker,taker,short):
         '''
         Set up the fee structure associated with a broker
 
@@ -126,6 +132,7 @@ class Trader():
 
         self.fees['maker'] = maker
         self.fees['taker'] = taker
+        self.fees['short'] = short
     
     def strat_init(self,bandAbove,bandBelow,mean):
         '''
@@ -142,9 +149,10 @@ class Trader():
 
         General logic:
         
-        For now, trades are executed at the next timestep. That means that 
+        For now, trades are executed at the next timestep (lag accounts for slippage). That means that 
         we need to set a timedelta
         """ 
+
         if trade_type in ['buy','cover']:
             amount = abs(amount)
         elif trade_type in ['sell','short']:
@@ -216,6 +224,7 @@ class Trader():
 
         if not self.logfile:
             print('Don\'t run a trader without a logfile for now. Retry after calling trader.set_logfile.')
+            return
         
 
         flag = self.strategy.execute()
