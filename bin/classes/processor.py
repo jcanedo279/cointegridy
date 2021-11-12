@@ -126,9 +126,13 @@ class Processor:
             r = requests.get(url, params=params)
             headers, status = r.headers, r.status_code
             
-            # previous_weight = headers['x-mbx-used-weight']
-            used_weight_1m = headers['x-mbx-used-weight-1m']
+            previous_weight = float(headers['x-mbx-used-weight'])
+            used_weight_1m = float(headers['x-mbx-used-weight-1m'])
             # connection = headers['Connection']
+            
+            if used_weight_1m + 1.25*previous_weight >= MAX_USED_WEIGHT_1M:
+                Time.sleep()
+                continue
             
             ### 418 -> IP BAN       429 -> RATE LIMIT VIOLATION
             if self.api=='bnc' and status in {418, 429}:
@@ -266,9 +270,9 @@ class Processor:
     ## OHLC DATA PROCESSORS ##
     ##########################
     
-    def id_to_ohlc_seq(self, id, start_Time, end_Time, tmsp_interval="10M", limit=1000):
+    def id_to_ohlc_seq(self, id, start_Time, end_Time, interval_flag="10m", limit=1000):
         """
-            tmsp_interval: int + {"S", "m", "h" "D"}
+            interval_flag: int + {"S", "m", "h" "D"}
         """
         
         if self.api == 'bnc':
@@ -276,9 +280,9 @@ class Processor:
             
             start_tmsp, end_tmsp = int(start_Time.get_psx_tmsp())*1000, int(end_Time.get_psx_tmsp())*1000
             
-            params = {'symbol': id, 'startTime': start_tmsp, 'endTime': end_tmsp, 'interval':tmsp_interval, 'limit': limit}
+            params = {'symbol': id, 'startTime': start_tmsp, 'endTime': end_tmsp, 'interval':interval_flag, 'limit': limit}
             
-            data = self.get_request(ohlc_url, params=params)
+            data = self.get_request(ohlc_url, params=params, max_re_requests=100)
             
             output = [{'open_tmsp':float(d[0])/1000, 'open':float(d[1]), 'high':float(d[2]), 'low':float(d[3]), 'close':float(d[4]), 'vol':float(d[5]), 'close_tmsp':float(d[6])/1000} for d in data]
             

@@ -1,3 +1,4 @@
+import copy
 import pytz
 from datetime import date, datetime, timezone, timedelta, tzinfo
 import time
@@ -35,6 +36,10 @@ class Time:
         
         self.utc_dtobj = datetime.now(UTC_TZOBJ) if utc_tmsp==None else datetime.fromtimestamp(utc_tmsp)
         
+    def __repr__(self):
+        return f'{self.utc_dtobj.year}-{self.utc_dtobj.month}-{self.utc_dtobj.day}  {self.utc_dtobj.hour}:{self.utc_dtobj.minute}'
+        
+        
     def get_psx_tmsp(self):
         return self.utc_dtobj.timestamp()
     
@@ -45,6 +50,20 @@ class Time:
             return self.utc_dtobj.astimezone(trg_tzobj)
         except Exception as e:
             print(f'trg_tz={trg_tz} is not a valid target timezone, enter a valid string or a valid pytz timezone object')
+    
+    def add_seconds(self, seconds):
+        days=0
+        if seconds >= 60*60*24:
+            days = seconds // 60*60*24
+            seconds = seconds - days*60*60*24
+            
+        delta = timedelta(seconds=seconds, days=days)
+        self.utc_dtobj += delta
+
+        
+    #############
+    ## BUILTIN ##
+    #############
     
     @staticmethod
     def sleep(secs=10):
@@ -66,6 +85,13 @@ class Time:
         obj = time.gmtime(0)
         return time.asctime(obj)
     
+    @staticmethod
+    def add_seconds_from_Time(_Time, seconds):
+        _T = copy.deepcopy(_Time)
+        _T.add_seconds(seconds)
+        return _T
+    
+    
     #######################
     ## CONVERT FROM DATE ##
     #######################
@@ -75,6 +101,11 @@ class Time:
         date = datetime(year, month, day, hour, minute, second, microsecond, tzinfo=timezone.utc)
         return Time(utc_tmsp=date.timestamp())
     
+    @staticmethod
+    def datetime_to_Time(datetime):
+        mock_Time = Time()
+        mock_Time.utc_dtobj = datetime.astimezone(UTC_TZOBJ)
+        return mock_Time
     
     #######################
     ## CONVERT FROM TMSP ##
@@ -124,9 +155,42 @@ class Time:
                 yield f'{norm_date(s_d)}-{norm_date(s_m)}-{start_date.year}'
             start_date += delta
     
+    
+    @staticmethod
+    def iter_Time(start_Time, end_Time, sec_interval=600, conv=False):
+        """
+            start_Time, end_Time: random Time objects
+            conv: False -> string format return, True -> int tuple format return
+            
+            Returns: Time object generator
+        """
+        
+        def norm_date(d):
+            return d if len(d)==2 else f'0{d}'
+        
+        delta = timedelta(seconds=sec_interval)
+        
+        cur_date, end_date = start_Time.utc_dtobj, end_Time.utc_dtobj
+        
+        
+        while cur_date <= end_date:
+            s_d, s_m = f'{cur_date.day}', f'{cur_date.month}'
+            if conv:
+                yield Time.datetime_to_Time(cur_date)
+            else:
+                yield f'{norm_date(s_d)}-{norm_date(s_m)}-{cur_date.year}'
+            cur_date += delta
+        
+        
+        
+        
+        pass
 
 
 ZERO = timedelta(0)
+
+
+
 class UTC(tzinfo):
     """UTC"""
 
