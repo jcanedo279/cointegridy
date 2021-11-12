@@ -33,15 +33,18 @@ Methods:
 # TODO: Should prices or residual data be stored in an attribute?
 """
 
+import sys
 import pandas as pd
 import numpy as np
-
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import MinMaxScaler
 import statsmodels.api as sm
+from statsmodels.tsa.stattools import coint
 
-from processing import *
-from bin import Statistics as stat
+# Custom Imports
+from .processor import Processor
+from ..utils import stats as stat
+
 
 class Basket():
 
@@ -156,6 +159,8 @@ class Basket():
         """
         USING BOLLINGER BANDS
 
+        TODO: Should this be a property of basket or trader?
+
         Define bollinger band entry and exit points.
         """
         self.upper_band_ = self.intercept_ + num_stds * self.std_
@@ -169,3 +174,9 @@ class Basket():
                 colors=['blue', 'red', 'green', 'green'])
 
         return self.upper_band_, self.lower_band_
+
+    def __repr__(self):
+        return "Basket:" + str(self.coins_)
+
+    def __str__(self):
+        return "Basket:" + str(self.coins_)
