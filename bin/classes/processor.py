@@ -19,7 +19,7 @@ import math
 # import backtester
 
 # Custom imports
-from .time import Time
+from Time import Time
 from ..utils import stats, transforms
 
 ENV_PATH = '.env'

@@ -1,4 +1,4 @@
-from ..bin.classes.time import Time
+from ..bin.classes._time import Time
 from datetime import datetime, timezone
 
 NAT_TZ = 'America/Los_Angeles'
