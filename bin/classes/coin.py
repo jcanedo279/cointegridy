@@ -37,7 +37,7 @@ class Coin():
         self.is_good_ = None
         self.start_ = None
         self.end_ = None
-
+        
     def is_good(self, prices, start, end):
         """
         Validity check: coin is I(1) during start:end

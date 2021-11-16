@@ -61,10 +61,22 @@ class Basket():
         self.upper_band_ = None
         self.lower_band_ = None
         self.std_ = None
+        self.prices_ = None
     
-    def get_prices(self):
-        return
-        #self.prices_ = 
+    def get_prices(self,start,end):
+        '''
+        Takes in start and end Time objects.
+
+        Returns a pandas dataframe indexed by timestamps
+        '''
+        df = pd.DataFrame()
+        
+        for coin in self.coins_:
+            df[coin.name_] = self.dataloader_[coin.name_.upper()  + 'USDT'][start:end]
+
+        self.prices_ = df
+
+
     def fit(self, prices):
         """
         Returns coefficients and intercept of linear combination.
