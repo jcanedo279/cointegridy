@@ -42,29 +42,25 @@ import statsmodels.api as sm
 from statsmodels.tsa.stattools import coint
 
 # Custom Imports
-from data_loader import DataLoader
-from coin import Coin
+from .processor import Processor
 from ..utils import stats as stat
 
 
 class Basket():
 
-    def __init__(self, coins, target, dataloader, method='linear_regression'):
+    def __init__(self, coins, target, processor, method='linear_regression'):
 
         self.coef_ = []
         self.coins_ = coins
         self.method_ = method
         self.target_ = target
-        self.dataloader_ = dataloader
+        self.processor_ = processor
         self.is_coint_ = None
         self.intercept_ = None
         self.upper_band_ = None
         self.lower_band_ = None
         self.std_ = None
-    
-    def get_prices(self):
-        return
-        #self.prices_ = 
+
     def fit(self, prices):
         """
         Returns coefficients and intercept of linear combination.

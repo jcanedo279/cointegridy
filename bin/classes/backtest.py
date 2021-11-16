@@ -2,7 +2,11 @@
 # Writing my own
 from datetime import timedelta
 from basket import Basket
-from bin import exceptions
+from bin import exceptions,time
+
+from sys import argv
+
+from data_loader import DataLoader
 
 #############################
 ## Backtesting Environment ##
@@ -39,19 +43,28 @@ Define a function to liquidate all positions
 
 class Event():
     
-    def __init__(self,target,direction,processor):
-        self.processor = processor
+    def __init__(self,target,direction,symbol):
+
+        '''
+        An Event represents the price of an asset crossing a line with a direction.
+        '''
+
+        self.symbol = symbol
         self.target = target
 
         if direction not in ['over','under']:
             raise exceptions.invalidDirection()
         
-    def check(self,tmsp,prevstamp):
+    def check(self,tmsp,prevstamp,dataloader):
         # The .loc expressions for previous stamp need to be corrected so it can get the previous timestamp dynamically. I'm just dumb and don't know how to do that.
 
-        if self.direction == 'over' and self.processor.portfolio.loc[prevstamp] < self.target and self.processor.portfolio.loc[tmsp] >= self.target: # THIS SHOULD BE THE PREVIOUS TIMESTAMP
+        prevstamp = tmsp - timedelta(minutes = 5)
+        start = tmsp - timedelta(minutes=10)
+        data = dataloader[self.symbol][start:tmsp]
+
+        if self.direction == 'over' and data[prevstamp] < self.target and data[tmsp] >= self.target:
                 return True
-        elif self.direction == 'under' and self.processor.portfolio.loc[prevstamp] > self.target and self.processor.portfolio.loc[tmsp] <= self.target: # THIS SHOULD BE THE PREVIOUS TIMESTAMP
+        elif self.direction == 'under' and data[prevstamp] > self.target and data[tmsp] <= self.target:
                 return True
         return False
 
@@ -238,6 +251,8 @@ class Trader():
                 self.spread_trade(tmsp,self.dollars_per_trade,'sell')
             else:
                 self.spread_trade(tmsp,self.dollars_per_trade,'cover')
+        
+        self.log(tmsp,self.outfile)
     
     def log(self,tmsp,outfile,message=None):
         
@@ -290,7 +305,7 @@ class Backtester():
         trader = Trader(self.basket)
         trader.add_funds(200)
         trader.strat_init(placeholder,placeholder,placeholder)
-        trader.set_logfile(logfile)
+        trader.set_logfile(logfile+'.txt')
 
         trader.set_fees(placeholder,placeholder)
 
@@ -299,3 +314,26 @@ class Backtester():
             trader.execute_strategy(time)
 
         return None
+
+
+'''
+
+'''
+if __name__ == "__main__":
+    
+    log = argv[1]
+
+    start_date, end_date = (2021,2,1), (2021,6,1)
+
+    start_Time, end_Time = time.Time.date_to_Time(*start_date), time.Time.date_to_Time(*end_date)
+        
+    loader = DataLoader
+    
+    sample_symbol = 'BTCUST'
+    
+    data = loader[sample_symbol][start_Time:end_Time]
+
+    bt = Backtester()
+
+    print(data)
+

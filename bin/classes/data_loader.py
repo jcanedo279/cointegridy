@@ -7,9 +7,9 @@ import pandas as pd
 import requests
 from numpy import float64
 
-from bin.classes.processor import Processor
-from bin.classes.time import Time
-from bin.utils.stats import sharpe_ratio
+from processor import Processor
+from time import time
+from ..utils.stats import sharpe_ratio
 
 
 TXT_DEL=' '
@@ -335,7 +335,7 @@ if __name__=='__main__':
     # load_data(interval=interval, bnc_ids=ids)
     
     
-    start_date, end_date = (2021,1,28), (2021,2,1)
+    start_date, end_date = (2021,1,28,9,30), (2021,2,1,10,0)
     start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
     
     sample_symbol = 'BTCUSDT'
