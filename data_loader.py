@@ -4,17 +4,18 @@ from datetime import datetime
 from typing import Generator
 
 from intervaltree import IntervalTree
+from ncls import NCLS
 
 import pandas as pd
 import numpy as np
 import requests
 
-from processor import Processor
+from bin.classes.processor import Processor
 
 # Custom imports
 # from .time import Time
-from Time import Time
-from ..utils.stats import sharpe_ratio
+from bin.classes.Time import Time
+from bin.utils.stats import sharpe_ratio
 
 
 
@@ -145,9 +146,9 @@ def get_best_stocks_from_CSV(file_path, _del, num_symbols):
 
 
 
-##########################
-## DYNAMMIC DATA LOADER ##
-##########################
+###########################
+## DYNAMMIC DATA LOADERS ##
+###########################
 
 class TreeSymbolLoader:
     """
