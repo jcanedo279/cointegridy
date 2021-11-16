@@ -66,7 +66,7 @@ class Time:
     #############
     
     @staticmethod
-    def sleep(secs=10):
+    def sleep(secs=10): ## Wrap time sleep for easier imports
         time.sleep(secs)
     
     @staticmethod

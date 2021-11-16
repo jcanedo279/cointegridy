@@ -10,7 +10,7 @@ import copy
 import sys
 
 from ..utils import stats, transforms
-from . import time
+from Time import Time
 
 class CGProcessor:
     
