@@ -24,7 +24,7 @@ class TreeNode:
         return has_child
     
     def repr(self):
-        return f'{self.lower} {self.upper}'
+        return f'{self.lower} {self.upper} -> {self.height}'
     
     def __repr__(self):
         return self.repr()
@@ -35,16 +35,23 @@ class IntervalTree:
     def __init__(self):
         
         self.root = None
+        self.intervals = set()
         
         
-    def insert(self, lower, upper, value=None):
-        """Insert based on key=lower
+    def insert(self, lower:int, upper:int, value:TreeNode=None):
+        """[Insert interval [lower,upper] based on lower]
 
         Args:
-            lower ([type]): [description]
-            upper ([type]): [description]
-            value ([type], optional): [description]. Defaults to None.
+            lower (int): [lower bound]
+            upper (int): [upper bound]
+            value (TreeNode, optional): [some value]. Defaults to None.
         """
+        
+        ## Assert interval does not exist
+        interval = (lower,upper,value)
+        if interval in self.intervals:
+            return -1
+        self.intervals.add(interval)
         
         ## The node to be inserted
         new_node = TreeNode(lower, upper, value=value, parent=None)
@@ -71,30 +78,47 @@ class IntervalTree:
                 target_node = target_node.right
               
         ## Update parents
-        running_min, running_max = new_node.lower, new_node.upper
-        parent_node = new_node.parent
-        while parent_node:
-            running_min, running_max = min(running_min, parent_node._min), max(running_max, parent_node._max)
-            
-            parent_node.height += 1
-            parent_node._min, parent_node._max = running_min, running_max
-            
-            parent_node = parent_node.parent
+        if new_node.parent:
+            cur_parent = new_node.parent
+            while cur_parent:
+                height_left = 0 if not cur_parent.left else cur_parent.left.height
+                height_right = 0 if not cur_parent.right else cur_parent.right.height
+                
+                min_left = cur_parent.lower if not cur_parent.left else min(cur_parent.left._min, cur_parent.lower)
+                max_left = cur_parent.upper if not cur_parent.left else max(cur_parent.left._max, cur_parent.upper)
+                min_right = cur_parent.lower if not cur_parent.right else min(cur_parent.right._min, cur_parent.lower)
+                max_right = cur_parent.upper if not cur_parent.right else max(cur_parent.right._max, cur_parent.upper)
+                
+                cur_parent.height = max(height_left, height_right) + 1
+                cur_parent._min, cur_parent._max = min(min_left, min_right), max(max_left, max_right)
+                
+                cur_parent = cur_parent.parent
 
         ## Rebalance the root
         if IntervalTree.balance_factor(self.root) > 1: ## Left heavy
             self.root = IntervalTree.r_rotate(self.root)
-            self.root.height -= 1
         elif IntervalTree.balance_factor(self.root) < -1: ## Right heavy
             self.root = IntervalTree.l_rotate(self.root)
-            self.root.height += 1
-            
     
     
-    def delete(self, lower, upper, value=None):
+    def delete(self, lower:int, upper:int, value:TreeNode=None):
+        """[Delete interval (lower,upper) based on lower]
+
+        Args:
+            lower (int): [lower bound]
+            upper (int): [upper bound]
+            value (TreeNode, optional): [some value]. Defaults to None.
+        """
+        
+        ## Assert interval exists
+        interval = (lower,upper,value)
+        if interval not in self.intervals:
+            return -1
+        self.intervals.remove(interval)
         
         if not self.root: return
         
+        ## Find target_node, the interval to be deleted
         target_node = self.root
         while True:
             if (lower==target_node.lower) and (upper==target_node.upper):
@@ -107,16 +131,15 @@ class IntervalTree:
                 target_node = target_node.right
         
         parent = target_node.parent
-        if (not target_node.left) and (not target_node.right):
+        if (not target_node.left) and (not target_node.right): ## No children
             if not parent: ## No parent
                 self.root = None
-                return
             elif target_node.lower >= parent.lower: ## parent.right=target_node
                 parent.right = None
             else: ## parent.left=target_node
                 parent.left = None
             
-        elif target_node.left and target_node.right:
+        elif target_node.left and target_node.right: ## Both children
             succ = IntervalTree.successor(target_node)
             
             if not parent: ## No parent
@@ -175,26 +198,132 @@ class IntervalTree:
                 parent.height -= 1
                 
         ## Update parents
-        running_min, running_max = target_node._min, target_node._max
-        if (target_node.lower < parent.left._min) and (target_node.lower < parent.right._min): ## If parent's min came from target_node
-            running_min = min(target_node.left._min, target_node.right._min)
-        if (target_node.upper > parent.left._max) and (target_node.upper < parent.right._max): ## If parent's min came from target_node
-            running_max = max(target_node.left._max, target_node.right._max)
-        cur_parent = parent
-        while cur_parent:
-            parent_node.height -= 1
-            parent_node = parent_node.parent
+        if parent:
+            cur_parent = parent
+            while cur_parent:
+                height_left = 0 if not cur_parent.left else cur_parent.left.height
+                height_right = 0 if not cur_parent.right else cur_parent.right.height
+                
+                min_left = cur_parent.lower if not cur_parent.left else min(cur_parent.left._min, cur_parent.lower)
+                max_left = cur_parent.upper if not cur_parent.left else max(cur_parent.left._max, cur_parent.upper)
+                min_right = cur_parent.lower if not cur_parent.right else min(cur_parent.right._min, cur_parent.lower)
+                max_right = cur_parent.upper if not cur_parent.right else max(cur_parent.right._max, cur_parent.upper)
+                
+                cur_parent.height = max(height_left, height_right)+1
+                cur_parent._min, cur_parent._max = min(min_left, min_right), max(max_left, max_right)
+                
+                cur_parent = cur_parent.parent
         
         ## Rebalance the root
         if IntervalTree.balance_factor(self.root) > 1: ## Left heavy
             self.root = IntervalTree.r_rotate(self.root)
-            self.root.height -= 1
         elif IntervalTree.balance_factor(self.root) < -1: ## Right heavy
             self.root = IntervalTree.l_rotate(self.root)
-            self.root.height += 1
-            
+    
+    
+    def querry(self, querry:slice):
+        
+        if (self.root._max < querry.start) or (querry.stop < self.root._min): return []
+        
+        paths = []
+        
+        ## Get the starting upper bound of our interval chain
+        start_node = self.rec_search_max_start(querry, self.root)
+        start = querry.start
+        if start_node:
+            paths += [start_node]
+            start = start_node.upper
+        
+        rec_paths,_ = self.rec_search(querry, self.root, start)
+        paths += rec_paths
+                
+        return paths
+    
+    
+    
+    def rec_search(self, querry:slice, cur_node:TreeNode, path_max:int):
+        """[Recursively search for spanning intervals that cover querry]
+
+        Args:
+            querry (slice): [a slice querry]
+            cur_node (TreeNode): [the root of the search tree]
+            path_max (int): [the running maximum we are trying to best]
+
+        Returns:
+            [([TreeNode],int)]: [a path of TreeNodes and the path maximum]
+        """
+        
+        paths = []
+        start, stop = querry.start, querry.stop
+        lower, upper = cur_node.lower, cur_node.upper
+        
+        if path_max >= stop:
+            return [], path_max
+        
+        ## Search left subtree
+        if path_max<stop and cur_node.left and (cur_node.left._max>path_max):
+            if cur_node.left.upper == cur_node.left._max: ## left is part of solution
+                if cur_node.left.lower < stop:
+                    paths += [cur_node.left]
+                path_max = cur_node.left.upper
+            else:
+                left_path, path_max = self.rec_search(querry, cur_node.left, path_max)
+                paths += left_path
+          
+        ## Search current
+        if path_max<stop and lower<=path_max and upper>path_max: ## cur_node is part of solution
+            paths += [cur_node]
+            path_max = upper
+        
+        ## Search right subtree
+        if path_max<stop and cur_node.right and (cur_node.right._max>path_max):
+            if cur_node.right.upper == cur_node.right._max: ## right is part of solution
+                if cur_node.right.lower < stop:
+                    paths += [cur_node.right]
+                path_max = cur_node.right.upper
+            else:
+                right_path, path_max = self.rec_search(querry, cur_node.right, path_max)
+                paths += right_path
+        
+        return paths, path_max
+    
+    
+    def rec_search_max_start(self, querry:slice, cur_node:TreeNode):
+        """[summary]
+
+        Args:
+            querry (slice): [a slice querry]
+            cur_node (TreeNode): [the root of the search tree]
+
+        Returns:
+            [TreeNode]: [the node with largest lower bound (<=querry.start) such that its upper bound is greater than querry.start]
+                        (default None if no node exists)
+        """
+        
+        start, stop = querry.start, querry.stop
+        
+        ## Search right subtree
+        if cur_node.right and (cur_node.right._min<=start) and (cur_node.right._max>=start):
+            if (cur_node.right.lower<=start) and (cur_node.right.upper>=start): ## right is part of solution
+                return cur_node.right
+            rec_left = self.rec_search_max_start(querry, cur_node.right)
+            if rec_left: return rec_left
+        
+        ## Search current
+        if (cur_node.lower<=start) and (cur_node.upper>=start):
+            return cur_node
+        
+        ## Search left subtree
+        if cur_node.left and (cur_node.left._min<=start) and (cur_node.left._max>=start):
+            if (cur_node.left.lower<=start) and (cur_node.left.upper>=start):
+                return cur_node.left
+            rec_right = self.rec_search_max_start(querry, cur_node.left)
+            if rec_right: return rec_right
+    
+        return None
         
 
+    
     
     
     @staticmethod
@@ -214,7 +343,7 @@ class IntervalTree:
         left_height = 0 if not node.left else node.left.height
         right_height = 0 if not node.right else node.right.height
         return left_height - right_height
-        
+    
     
     @staticmethod
     def r_rotate(x):
@@ -251,6 +380,11 @@ class IntervalTree:
             
             b.right = x
             x.parent = b
+        
+        ## Adjust heights
+        h_b, h_c = 0 if not b else b.height, 0 if not c else c.height
+        x.height = max(h_b, h_c)+1
+        y.height = max(x.height, a.height)+1
         
         return y
     
@@ -290,13 +424,15 @@ class IntervalTree:
             x.right = b
             if b:
                 b.parent = x
+        
+        ## Adjust heights
+        h_a, h_b = 0 if not a else a.height, 0 if not b else b.height
+        x.height = max(h_a, h_b)+1
+        y.height = max(x.height, c.height)+1
                 
         return y
-            
-            
-            
-                
-            
+    
+    
         
         
         
@@ -335,20 +471,19 @@ def driver():
     itree.insert(0, 4, 'its')
     itree.insert(3, 8, 'me again')
     itree.insert(-1, 2, 'h')
-    
-    print(itree)
-    
     itree.insert(-2, -1, 'h')
     print(itree)
     
-    print(itree.root._min, itree.root._max)
     
-    # itree.delete(-2, -1, 'h')
-    # print(itree)
+    itree.delete(-2, -1, 'h')
+    print(itree)
     
-    # itree.insert(-2, -1, 'h')
+    itree.insert(-2, -1, 'h')
     # itree.delete(-1, 2, 'h')
-    # print(itree)
+    print(itree)
+    
+    querry = slice(-2,8)
+    print(itree.querry(querry))
     
     
 
