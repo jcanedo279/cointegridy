@@ -43,61 +43,69 @@ Define a function to liquidate all positions
 
 class Event():
     
-    def __init__(self,target,direction,symbol):
+    def __init__(self,target,direction):
 
         '''
         An Event represents the price of an asset crossing a line with a direction.
         '''
 
-        self.symbol = symbol
         self.target = target
 
         if direction not in ['over','under']:
             raise exceptions.invalidDirection()
         
-    def check(self,tmsp,prevstamp,dataloader):
+    def check(self,tmsp,series):
         # The .loc expressions for previous stamp need to be corrected so it can get the previous timestamp dynamically. I'm just dumb and don't know how to do that.
 
         prevstamp = tmsp - timedelta(minutes = 5)
         start = tmsp - timedelta(minutes=10)
-        data = dataloader[self.symbol][start:tmsp]
 
-        if self.direction == 'over' and data[prevstamp] < self.target and data[tmsp] >= self.target:
+        # Note: this won't run properly until you add code to make these starts and stops into Time objects.
+        
+        if self.direction == 'over' and series[prevstamp] < self.target and series[tmsp] >= self.target:
                 return True
-        elif self.direction == 'under' and data[prevstamp] > self.target and data[tmsp] <= self.target:
+        elif self.direction == 'under' and series[prevstamp] > self.target and series[tmsp] <= self.target:
                 return True
         return False
 
 class Strategy():
 
-    def __init__(self,shortEntryPoint,longEntryPoint,shortExitPoint,longExitPoint,processor):
+    '''
+    The wrapper that defines when to buy and sell. For now, this is a simple mean reversion strategy. 
+    
+    Takes in a buy and sell point for short and long trades. 
+    
+    I eventually plan to make this more general.
+    '''
+
+    def __init__(self,shortEntryPoint,longEntryPoint,shortExitPoint,longExitPoint):
 
         self.shortEntryPoint = shortEntryPoint
         self.longEntryPoint = longEntryPoint
         self.shortExitPoint = shortExitPoint
         self.longExitPoint = longExitPoint
 
-        self.longEntry = Event(longEntryPoint,'under',processor)
-        self.shortEntry = Event(shortEntryPoint,'over',processor)
-        self.longExit = Event(longExitPoint,'under',processor)
-        self.shortExit = Event(shortExitPoint,'over',processor)
+        self.longEntry = Event(longEntryPoint,'under')
+        self.shortEntry = Event(shortEntryPoint,'over')
+        self.longExit = Event(longExitPoint,'under')
+        self.shortExit = Event(shortExitPoint,'over')
 
     def __str__(self):
         return(f'Strategy object \nEvents: ')
 
-    def execute(self):
+    def execute(self,tmsp,series):
 
         '''
         Check all events. They are mutually exclusive so we can check them in sequence.
         '''
 
-        if self.longEntry.check():
+        if self.longEntry.check(tmsp,series):
             return 'NL'
-        elif self.shortEntry.check():
+        elif self.shortEntry.check(tmsp,series):
             return 'NS'
-        elif self.longExit.check():
+        elif self.longExit.check(tmsp,series):
             return 'EL'
-        elif self.shortExit.check():
+        elif self.shortExit.check(tmsp,series):
             return 'ES'
 
 
@@ -120,6 +128,8 @@ class Trader():
         self.open_position = False
         self.dollars_per_trade = self.funds / 4
         self.logfile = None
+        self.series = self.basket.prices_['spread']
+
 
     def add_funds(self,cash):
         '''
@@ -147,12 +157,12 @@ class Trader():
         self.fees['taker'] = taker
         self.fees['short'] = short
     
-    def strat_init(self,bandAbove,bandBelow,mean):
+    def strat_init(self,bandAbove,bandBelow,mean,std):
         '''
         Choose a strategy to use. For now this will just be different types of mean reversion trades.
         '''
 
-        self.strategy = Strategy(bandAbove,bandBelow,mean,mean,self.basket.processor)
+        self.strategy = Strategy(bandAbove,bandBelow,mean+std/2,mean-std)
 
     def trade(self,tmsp,asset,amount,trade_type,lag='5s'):
         """
@@ -190,7 +200,7 @@ class Trader():
             
         # Execute trade at next timestep
 
-        cost = self.basket.processor.data[asset.name_].loc[execution_time] * amount 
+        cost = self.basket.prices[asset.name_][execution_time] * amount 
         
         # Calculate fees
 
@@ -240,7 +250,7 @@ class Trader():
             return
         
 
-        flag = self.strategy.execute()
+        flag = self.strategy.execute(tmsp,self.series)
         if flag[0] == 'N' and not self.open_position:
             if flag[1] == 'L':
                 self.enter_spread_trade(tmsp,self.dollars_per_trade,'buy')
@@ -327,7 +337,7 @@ if __name__ == "__main__":
 
     start_Time, end_Time = time.Time.date_to_Time(*start_date), time.Time.date_to_Time(*end_date)
         
-    loader = DataLoader
+    loader = DataLoader()
     
     sample_symbol = 'BTCUST'
     

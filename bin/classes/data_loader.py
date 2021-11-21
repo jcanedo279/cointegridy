@@ -10,12 +10,12 @@ import pandas as pd
 import numpy as np
 import requests
 
-from bin.classes.processor import Processor
+from .bin.classes.processor import Processor
 
 # Custom imports
 # from .time import Time
-from bin.classes.Time import Time
-from bin.utils.stats import sharpe_ratio
+from .bin.classes.Time import Time
+from .bin.utils.stats import sharpe_ratio
 
 
 

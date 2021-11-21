@@ -106,6 +106,8 @@ class Basket():
         print("Found coefficients for basket: ", [1] + list(self.coef_))
         print("At intercept: ", self.intercept_)
         
+        self.prices_['spread'] = self.prices_.dot(pd.Series(self.coef_))
+        
         return self.coef_, self.intercept_
         
     def fit_linear_regression(self, X, y):
