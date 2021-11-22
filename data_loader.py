@@ -3,8 +3,8 @@ import os
 from datetime import datetime
 from typing import Generator
 
+from slicetree import SliceTree
 from intervaltree import IntervalTree
-from ncls import NCLS
 
 import pandas as pd
 import numpy as np
@@ -16,6 +16,14 @@ from bin.classes.processor import Processor
 # from .time import Time
 from bin.classes.Time import Time
 from bin.utils.stats import sharpe_ratio
+
+
+def parse_interval_flag(flag):
+    last_char = 0
+    for _char in flag:
+        if _char.isnumeric(): last_char += 1
+        
+    return int(flag[:last_char]) * INT_TO_MULTIPLIER[flag[last_char:]]
 
 
 
@@ -39,20 +47,18 @@ INT_TO_MULTIPLIER = {
     'M': 60*60*24*7*4
 }
 
+VALID_FLAGS = ['1m','3m','5m','15m','30m','1h','2h','4h','6h','8h','12h','1d','3d','1w','1M']
 
+STEP_TO_FLAG = {parse_interval_flag(flag):flag for flag in VALID_FLAGS}
+
+
+DEFAULT_STEP = 5*INT_TO_MULTIPLIER['m'] ## The amount to step
+DEFAULT_NUM_STEPS = 499 ## Maximum number of steps
 
 
 def get_ids():
     with open(METADATA_PATH, "r") as f_reader:
         return f_reader.read().split(TXT_DEL)
-
-
-def parse_interval(interval):
-    last_char = 0
-    for _char in interval:
-        if _char.isnumeric(): last_char += 1
-        
-    return int(interval[:last_char]) * INT_TO_MULTIPLIER[interval[last_char:]]
 
 
 def binary_search_tmsp(csv_lines, tmsp):
@@ -159,94 +165,125 @@ class TreeSymbolLoader:
         self.pc = processor
         self.id = _id.upper()
         self.data_dir = f'{DYNAMMIC_DATA_PATH}/{_id.upper()}/'
-        ## A mapping: tmsp interval [inclusive, non-inclusive) -> filename
-        self.interval_tree = IntervalTree()
+        ## A mapping: slice [start:stop:step] -> filename
+        self.slice_tree = SliceTree()
 
-        ## IF id does not have a data directory, create it
+        ## If id does not have a data directory, create it
         if not os.path.exists(self.data_dir):
             os.mkdir(self.data_dir)
         
-        for filename in os.listdir(self.data_dir):
-            del_ind = filename.index('_')
-            start, stop = int(filename[:del_ind]), int(filename[del_ind+1:-4])
-            self.interval_tree[start:stop] = filename
+        for dirname in os.listdir(self.data_dir):
+            for filename in os.listdir(self.data_dir+dirname):
+                filename_P = filename if not filename.endswith('.csv') else filename[:-4]
+                start,stop,step = filename_P.split('_')
+                start,stop,step = int(start),int(stop),int(step)
+                self.slice_tree[start:stop:step] = filename_P
     
     
     def __getitem__(self, _slice: slice) -> Generator:
+        
         assert isinstance(_slice, slice)
-        start, stop, interval = _slice.start, _slice.stop, _slice.step
+        start, stop, step = _slice.start, _slice.stop, _slice.step
+        if not step: step = DEFAULT_STEP
+        
+        if isinstance(step, str):
+            step = parse_interval_flag(step)
         if isinstance(start, Time):
             start = start.get_psx_tmsp()
         if isinstance(stop, Time):
             stop = stop.get_psx_tmsp()
         
-        ## Pull loaded overlapping intervals -> trim intervals
-        ## This takes O(k log_k)     where k = #overlapping_intervals + log_#intervals
-        file_paths, last_tmsp = [], float('-inf')  
-        for start_P,stop_P,f_name in sorted(self.interval_tree[start:stop]): 
-            if stop_P > last_tmsp:
-                file_paths.append((start_P,stop_P,f_name))
-                last_tmsp = stop_P
-        
-        ## Calculate missing intervals to complete querry (if any)
-        first_start = stop if not file_paths else file_paths[0][0]
-        missing_paths = [(start,first_start)] if start<first_start else []
-        for int_ind in range(len(file_paths)-1):
-            _,stop_P1,f_name = file_paths[int_ind]
-            start_P2,_,_ = file_paths[int_ind+1]
-            if stop_P1<start_P2:
-                missing_paths.append(stop_P1,start_P2)
-        if file_paths and file_paths[-1][1]<stop:
-            missing_paths.append((file_paths[-1][1],stop))
+        ## Yield results from local and bnc
+        cached_missing = set()
+        running_max = start-1
+        for filename, interval in self.slice_tree[start:stop:step]:
+            _start,_stop,_step = interval ## Iterate over sub-intervals
+            parse_step = _step if filename else step
+                
+            cur_start = _start
+            cur_rep = f'{_start}_{_stop}_{_step}/'
+            if not filename and (not os.path.exists(self.data_dir+cur_rep)):
+                os.mkdir(self.data_dir+cur_rep)
+            while cur_start+parse_step*DEFAULT_NUM_STEPS <= _stop:
+                _filename = cur_rep + f'{cur_start}_{cur_start+parse_step*DEFAULT_NUM_STEPS}_{parse_step}.csv'
+                
+                if filename: ## Lad from local
+                    if os.path.exists(self.data_dir+cur_rep):
+                        for datum,running_max in self.pull_seq_from_loaded(_filename, running_max):
+                            yield datum
+                    else:
+                        print(f'ERROR, MISSING DATA IN: {self.data_dir+_filename}')
+                else: ## Load from bnc
+                    cached_missing.add(interval)
+                    _interval_flag = STEP_TO_FLAG[step] if step in STEP_TO_FLAG else STEP_TO_FLAG[DEFAULT_STEP]
+                    for datum,running_max in self.pull_seq_from_bnc(self.id, cur_start, cur_start+step*DEFAULT_NUM_STEPS, running_max, interval_flag=_interval_flag):
+                        yield datum
+                
+                cur_start += parse_step
+                
+            if cur_start < _stop:
+                _filename = cur_rep + f'{cur_start}_{cur_start+parse_step*DEFAULT_NUM_STEPS}_{parse_step}.csv'
+                
+                if filename: ## Load from local
+                    _filename = cur_rep + filename + '.csv'
+                    if os.path.exists(self.data_dir+cur_rep):
+                        for datum,running_max in self.pull_seq_from_loaded(_filename, running_max):
+                            yield datum
+                    else:
+                        print(f'ERROR, MISSING DATA IN: {self.data_dir+_filename}')
+                
+                else: ## Load from bnc
+                    cached_missing.add(interval)
+                    _interval_flag = STEP_TO_FLAG[step] if step in STEP_TO_FLAG else STEP_TO_FLAG[DEFAULT_STEP]
+                    for datum,running_max in self.pull_seq_from_bnc(self.id, cur_start, _stop, running_max, interval_flag=_interval_flag):
+                        yield datum
 
-        ## Merge loaded and missing intervals
-        loaded_ptr, missing_ptr = 0, 0
-        merged_paths = []
-        while loaded_ptr<len(file_paths) and missing_ptr<len(missing_paths):
-            loaded, missing = file_paths[loaded_ptr][0], missing_paths[missing_ptr][0]
-            if loaded < missing:
-                merged_paths.append(loaded)
-                loaded_ptr += 1
-            else:
-                merged_paths.append(missing)
-                missing_ptr += 1 
-        if loaded_ptr<len(file_paths):
-            merged_paths.extend(file_paths[missing_ptr:])
-        if missing_ptr<len(missing_paths):
-            merged_paths.extend(missing_paths[missing_ptr:])
-        
-        ## Compile merged intervals into a contiguous timestamp sequence
-        for path in merged_paths:
-            if len(path)==2:
-                for tmsp, price in self.pull_seq_from_bnc(self.id, path[0], path[1]):
-                    yield tmsp, price
-            else:
-                for tmsp, price in self.pull_seq_from_loaded(path[2]):
-                    yield tmsp, price
-        
-    
-    def pull_seq_from_loaded(self, filename):
-        
-        lines = []
-        with open(self.data_dir+filename, 'r') as f_reader:
-            lines = [line.split(CSV_DEL) for line in f_reader.readlines()]
+            # if not filename: ## Stash this interval to put into memory later
+            #     cached_missing.add(interval)
             
-        return [(int(line[0]), float(line[1])) for line in lines]
+        
+        ## Add cached_missing to local
+        for c_start,c_stop,c_step in cached_missing:
+            
+            c_rep = f'{c_start}_{c_stop}_{c_step}'
+            c_iflag = STEP_TO_FLAG[c_step] if c_step in STEP_TO_FLAG else STEP_TO_FLAG[DEFAULT_STEP]
+            
+            cur_c_start = c_start
+            while cur_c_start+c_step*DEFAULT_NUM_STEPS <= c_stop:
+                filename = self.data_dir + f'{c_rep}/{cur_c_start}_{cur_c_start+c_step*DEFAULT_NUM_STEPS}_{c_step}.csv'
+                with open(filename, 'w') as f_writer:
+                    writer = csv.writer(f_writer)
+                    for datum in self.pc.id_to_ohlc_seq(self.id, Time(utc_tmsp=int(c_start)), Time(utc_tmsp=int(c_stop)), interval_flag=c_iflag):
+                        writer.writerow([int(float(datum['open_tmsp'])), float(datum['open'])])
+                cur_c_start += c_step*DEFAULT_NUM_STEPS
+                
+            if cur_c_start < c_stop: ## Add remaining sub-intervals
+                filename = self.data_dir + f'{c_rep}/{cur_c_start}_{c_stop}_{c_step}.csv'
+                with open(filename, 'w') as f_writer:
+                    writer = csv.writer(f_writer)
+                    for datum in self.pc.id_to_ohlc_seq(self.id, Time(utc_tmsp=int(cur_c_start)), Time(utc_tmsp=int(c_stop)), interval_flag=c_iflag):
+                        writer.writerow([int(float(datum['open_tmsp'])), float(datum['open'])])
+            
+            self.slice_tree[c_start:c_stop:c_step] = c_rep
     
     
-    def pull_seq_from_bnc(self, id, start_tmsp, stop_tmsp, interval_flag='5m'):
+    
+    def pull_seq_from_loaded(self, filename, running_max):
         
-        id_response = self.pc.id_to_ohlc_seq(id, Time(utc_tmsp=start_tmsp), Time(utc_tmsp=stop_tmsp), interval_flag=interval_flag)
-        tmsp_seq = [(int(float(d['open_tmsp'])), float(d['open'])) for d in id_response]
-        
-        filename = f'{int(float(start_tmsp))}_{int(float(stop_tmsp))}.csv'
-        seq_path = f'{self.data_dir}{filename}'
-        with open(seq_path, 'w+', newline ='') as f_writer:
-            writer = csv.writer(f_writer)
-            writer.writerows(tmsp_seq)
-        self.interval_tree[start_tmsp:stop_tmsp] = filename
-        
-        return tmsp_seq
+        with open(self.data_dir+filename, 'r') as f_reader:
+            reader = csv.reader(f_reader)
+            for line in reader:
+                tmsp, _ = int(float(line[0])), float(line[1])
+                if tmsp > running_max:
+                    running_max = tmsp
+                    yield (int(line[0]), float(line[1])), running_max
+    
+    
+    def pull_seq_from_bnc(self, id, start_tmsp, stop_tmsp, running_max, interval_flag='5m'): ## ONLY GRAB WHAT YOU NEED TO HERE
+        for datum in self.pc.id_to_ohlc_seq(id, Time(utc_tmsp=max(start_tmsp,running_max)), Time(utc_tmsp=stop_tmsp), interval_flag=interval_flag):
+            tmsp, value = int(float(datum['open_tmsp'])), float(datum['open'])
+            if tmsp > running_max:
+                yield (tmsp, value), running_max
         
 
 class TreeLoader:
@@ -256,26 +293,27 @@ class TreeLoader:
         self.id_to_load_ind = {}
         self.loaded_symbol_loaders = []
     
-    
     def __getitem__(self, _id: str ) -> TreeSymbolLoader:
         assert isinstance(_id,str)
-        
         id_loader = None        
         
-        ## IF we have seen id before
-        if _id in self.id_to_load_ind:
+        if _id in self.id_to_load_ind: ## If we have seen id before
             loader_ind = self.id_to_load_ind[_id]
             id_loader = self.loaded_symbol_loaders[loader_ind]
-        ## If this is a new symbol
-        else:
+        else: ## If this is a new symbol
             id_loader = TreeSymbolLoader(_id, self.pc)
-        
         return id_loader
-    
     
     def get_ids(self):
         return self.pc.get_api_ids()
-        
+
+
+
+
+
+
+
+
 
 
 ########################
@@ -336,7 +374,7 @@ class DataLoader:
         return get_ids()
     
     @staticmethod
-    def pull_data(start_Time=Time.date_to_Time(2021,1,1), end_Time=Time.date_to_Time(2021,11,1), interval_flag='5m', bnc_ids=None):
+    def pull_data(start_Time=Time.date_to_Time(2021,1,1), end_Time=Time.date_to_Time(2021,11,1), interval_flag='1d', bnc_ids=None):
         """
             1 day ~ 289 5 minute intervals   -->   1 year ~ 105,485 lines
             
@@ -345,7 +383,7 @@ class DataLoader:
             1 day ~ 5 minutes to compute   -->   11 months ~ 27.5 hrs to compute
         """
         
-        interval = parse_interval(interval_flag)
+        interval = parse_interval_flag(interval_flag)
         
         pc_bnc = Processor('bnc')
         if not bnc_ids:
@@ -400,10 +438,6 @@ if __name__=='__main__':
     ## PULL STATIC HISTORICAL DATA ##
     #################################
     
-    VALID_INTERVALS = ['1m','3m','5m','15m','30m','1h','2h','4h','6h','8h','12h','1d','3d','1w','1M']
-    
-    interval_flag = '5m'
-    
     db_start_date, db_end_date = (2021,1,28), (2021,2,1)
     db_start_Time, db_end_Time = Time.date_to_Time(*db_start_date), Time.date_to_Time(*db_end_date)
     
@@ -429,16 +463,49 @@ if __name__=='__main__':
     ## PULL DYNAMMIC HISTORICAL DATA ##
     ###################################
     
-    start_date, end_date = (2021,1,28), (2021,2,1)
-    start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
-    
     sample_symbol = 'BTCUSDT'
     
+    
+    date_intervals = [
+        ((2021,1,28), (2021,2,1), '6h'),
+        ((2020,12,16), (2020,12,23), '12h'),
+        ((2021,1,29), (2021,2,1), '4h'),
+        ((2020,11,19), (2020,11,22), '6h'),
+        ((2020,11,29),  (2020,12,1), '8h'),
+        ((2020,12,1), (2020,12,3), '4h')
+    ]
+
     tree_loader = TreeLoader()
     
-    for datum in tree_loader[sample_symbol][start_Time:end_Time]:
-        print(datum)
     
+    for start_date, end_date, step_flag in date_intervals:
+        start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
+        ## UNCOMMENT TO PUSH DATES
+        list( tree_loader[sample_symbol][start_Time:end_Time:parse_interval_flag(step_flag)] )
+    
+    
+    ## QUERRYING
+    querry_interval_flag = '6h'
+    querry_sT, querry_eT = Time.date_to_Time(*(2020,11,12)), Time.date_to_Time(*(2021,2,3))
+    
+    data = tree_loader[sample_symbol][querry_sT:querry_eT:parse_interval_flag(querry_interval_flag)]
+    
+    
+    ## VERIFY QUERRY
+    data = list(data)
+    print('QUERRYING: ', querry_sT.get_psx_tmsp(), querry_eT.get_psx_tmsp())
+    
+    # for datum in data:
+    #     print(datum)
+    # print('-'*20)
+    
+    for datum_ind in range(len(data)-1):
+        datum, next_datum = data[datum_ind], data[datum_ind+1]
+        if datum[0]+parse_interval_flag(querry_interval_flag) != next_datum[0]:
+            print(datum, next_datum)
+    
+    
+    print(tree_loader[sample_symbol].slice_tree)
     
     
     

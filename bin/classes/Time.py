@@ -9,6 +9,23 @@ NAT_TZ = 'America/Los_Angeles'
 NAT_TZOBJ = pytz.timezone(NAT_TZ)
 
 UTC_TZOBJ = pytz.utc
+
+
+
+###################
+## PARSING FLAGS ##
+###################
+
+INT_TO_MULTIPLIER = {
+    'm': 60,
+    'h': 60*60,
+    'd': 60*60*24,
+    'w': 60*60*24*7,
+    'M': 60*60*24*7*4
+}
+
+VALID_FLAGS = {'1m','3m','5m','15m','30m','1h','2h','4h','6h','8h','12h','1d','3d','1w','1M'}
+
     
 class Time:
     
@@ -37,7 +54,8 @@ class Time:
         self.utc_dtobj = datetime.now(UTC_TZOBJ) if utc_tmsp==None else datetime.fromtimestamp(utc_tmsp)
         
     def __repr__(self):
-        return f'{self.utc_dtobj.year}-{self.utc_dtobj.month}-{self.utc_dtobj.day}  {self.utc_dtobj.hour}:{self.utc_dtobj.minute}'
+        return f'{self.utc_dtobj.year}-{self.utc_dtobj.month}-{self.utc_dtobj.day}'
+        # return f'{self.utc_dtobj.year}-{self.utc_dtobj.month}-{self.utc_dtobj.day}  {self.utc_dtobj.hour}:{self.utc_dtobj.minute}'
         
         
     def get_psx_tmsp(self):
@@ -90,6 +108,23 @@ class Time:
         _T = copy.deepcopy(_Time)
         _T.add_seconds(seconds)
         return _T
+    
+    
+    #######################
+    ## CONVERT FROM FLAG ##
+    #######################
+    
+    @staticmethod
+    def parse_interval_flag(flag):
+        last_char = 0
+        for _char in flag:
+            if _char.isnumeric(): last_char += 1
+            
+        return int(flag[:last_char]) * INT_TO_MULTIPLIER[flag[last_char:]]
+    
+    @staticmethod
+    def valid_flags():
+        return VALID_FLAGS
     
     
     #######################
