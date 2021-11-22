@@ -3,6 +3,8 @@ from typing import Iterable
 
 from treelib import Node, Tree
 
+from bin.classes.Time import Time
+
 
 DEFAULT_STEP = 1
 
@@ -35,7 +37,7 @@ class Node(object):
         return self.repr()
     
     def repr(self):
-        return f'{self.start}:{self.stop}:{self.step} -> {self._max}'
+        return f'{self.start}:{self.stop}:{self.step} -> {self.value}'
     
     def patch(self):
         self._min,self._max,self._min_step,self._max_start,self.height = SliceTree.subtree_data(self)
@@ -73,7 +75,15 @@ class SliceTree(object):
         self.root = SliceTree.delete_node(_slice, self.root, None, default_step=self.default_step)
     
     def __getitem__(self, _slice:slice):
-        for is_subtree, parent in self.querry(_slice):
+
+        querry_anc_generator = self.querry_anc(_slice)
+
+        first_value = next(querry_anc_generator, None)
+        if not first_value:
+            return
+        yield first_value[1] ## Manually yield first_value as it may be outside start range
+
+        for is_subtree, parent in querry_anc_generator:
             if is_subtree: yield from self.traverse_inorder_interior(_slice, parent)
             else: yield from self.yield_wrapper(_slice, parent)
     
@@ -88,8 +98,43 @@ class SliceTree(object):
         print_tree.show()
         
         return '-'*20
+
+
+
+
+    def overlap_querry(self, _slice:slice):
+        start,stop,step = SliceTree.fix_interval(_slice, default_step=self.default_step)
+        querry_generator = self.__getitem__(_slice)
+
+        running_node = next(querry_generator, None)
+        if not running_node:
+            yield None, (start,stop,step)
+            return
+        if start < running_node.start:
+            yield None, (start, running_node.start, step)
+
+        while running_node.stop+1<stop:
+            next_node = next(querry_generator, None)
+            if not next_node:
+                yield running_node.value, (running_node.start, running_node.stop, running_node.step)
+                if running_node.stop < stop:
+                    yield None, (running_node.stop+1, stop, step)
+                return
+            if next_node.start <= running_node.start: ## Update running_node
+                if next_node.stop > running_node.stop:
+                    running_node = next_node
+            else: ## New increased running_node
+                if next_node.stop > running_node.stop: ## next_node improves score
+                    yield running_node.value, (running_node.start, running_node.stop, running_node.step)
+                    if running_node.stop < next_node.start: ## If gap between running_node and next_node
+                        yield None, (running_node.stop, next_node.start, step)
+                    running_node = next_node
+        yield running_node.value, (running_node.start, running_node.stop, running_node.step)
+
+
+
     
-    
+
     ##### CORRECT INPUT INTERVAL #####
     @staticmethod
     def fix_interval(_slice:slice, default_step=DEFAULT_STEP):
@@ -189,7 +234,7 @@ class SliceTree(object):
     ## TREE QUERRYING ##
     ####################
 
-    def querry(self, _slice:slice):
+    def querry_anc(self, _slice:slice):
         if not self.root: return
         
         lower_node = self.find_lower_node(_slice)
@@ -277,7 +322,7 @@ class SliceTree(object):
     def traverse_inorder_interior(self, _slice:slice, root:Node):
         if not root: return
         start,stop,step = SliceTree.fix_interval(_slice, default_step=self.default_step)
-        if root.left and root.left._min<stop and root.left._max_start>=start and root.right._min_step<=step:
+        if root.left and root.left._min<stop and root.left._max_start>=start and root.left._min_step<=step:
             yield from self.traverse_inorder_interior(_slice, root.left)
         yield from self.yield_wrapper(_slice, root)
         if root.right and root.right._min<stop and root.right._max_start>=start and root.right._min_step<=step:
@@ -489,28 +534,25 @@ class SliceTree(object):
     
 
 
-
-
-
-myTree = SliceTree()
-nums = [
-    (33,34,6),
-    (13,14,3),
-    (52,53,16),
-    (9,10,1),
-    (21,22,8),
-    (61,62,2),
-    (8,9,2),
-    (11,12,4),
-    (11,12,2),
-    (1,2,1),
-    (-10,-3,1),
-    (-7,-2,1),
-    (2,5,1)
+intervals = [
+    (33,34,6,'a'),
+    (13,14,3,'b'),
+    (52,53,16,'c'),
+    (9,10,1,'d'),
+    (21,22,8,'e'),
+    (61,62,2,'e'),
+    (8,9,2,'fgh'),
+    (11,12,4,'b'),
+    (11,12,2,'jk'),
+    (1,2,1,'kl'),
+    (-10,-3,1,'kj'),
+    (-7,-2,1,'yes'),
+    (2,5,1,'target')
 ]
 
-for start,stop,step in nums:
-    myTree[start:stop:step] = None
+
+myTree = SliceTree(intervals)
+
 print(myTree)
 
 
@@ -533,10 +575,14 @@ print(myTree)
 # print(list(SliceTree.traverse(myTree.root)))
 
 
-print('-'*10, 'QUERRY [2:12:1]', '-'*10)
-for item in myTree[2:12:1]:
+# print('-'*10, 'QUERRY [2:12:1]', '-'*10)
+# for item in myTree[2:12:1]:
+#     print(item)
+# print('-'*30)
+
+
+for item in myTree.overlap_querry(slice(3,12,4)):
     print(item)
-print('-'*30)
 
 
 # for item in myTree.querry(slice(2,12,1)):
