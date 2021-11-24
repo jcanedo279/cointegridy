@@ -26,6 +26,15 @@ INT_TO_MULTIPLIER = {
 
 VALID_FLAGS = {'1m','3m','5m','15m','30m','1h','2h','4h','6h','8h','12h','1d','3d','1w','1M'}
 
+def parse_interval_flag(flag):
+        last_char = 0
+        for _char in flag:
+            if _char.isnumeric(): last_char += 1
+            
+        return float(flag[:last_char]) * INT_TO_MULTIPLIER[flag[last_char:]]
+
+VALID_STEPS = {parse_interval_flag(flag): flag for flag in VALID_FLAGS}
+
     
 class Time:
     
@@ -116,15 +125,15 @@ class Time:
     
     @staticmethod
     def parse_interval_flag(flag):
-        last_char = 0
-        for _char in flag:
-            if _char.isnumeric(): last_char += 1
-            
-        return int(flag[:last_char]) * INT_TO_MULTIPLIER[flag[last_char:]]
+        return parse_interval_flag(flag)
     
     @staticmethod
     def valid_flags():
         return VALID_FLAGS
+    
+    @staticmethod
+    def valid_steps():
+        return VALID_STEPS
     
     
     #######################

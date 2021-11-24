@@ -1,5 +1,6 @@
 from collections import deque
 from typing import Iterable
+from pytz import utc
 
 from treelib import Node, Tree
 
@@ -37,7 +38,11 @@ class Node(object):
         return self.repr()
     
     def repr(self):
-        return f'{self.start}:{self.stop}:{self.step} -> {self.value}'
+        if (not isinstance(self.start,str)) and (not isinstance(self.stop,str)) and len(f'{int(self.start)}')>=10 and len(f'{int(self.stop)}')>=10:
+            i_flag = self.step if not self.step in Time.valid_steps() else Time.valid_steps()[self.step]
+            return f'{Time(utc_tmsp=self.start)}  ::  {Time(utc_tmsp=self.stop)}  ::  {i_flag}'
+        
+        return f'{self.start}:{self.stop}:{self.step} >> {self.value}'
     
     def patch(self):
         self._min,self._max,self._min_step,self._max_start,self.height = SliceTree.subtree_data(self)
@@ -81,7 +86,12 @@ class SliceTree(object):
         first_value = next(querry_anc_generator, None)
         if not first_value:
             return
-        yield first_value[1] ## Manually yield first_value as it may be outside start range
+        
+        if first_value[0]:
+            yield from self.traverse_inorder_interior(_slice, first_value[1])
+        else:
+            if first_value[1].stop >= _slice.start and _slice.step%first_value[1].step==0: ## TODO :: Mock yield wrapper, this needs improvement
+                yield first_value[1] ## Manually yield first_value as it may be outside start range
 
         for is_subtree, parent in querry_anc_generator:
             if is_subtree: yield from self.traverse_inorder_interior(_slice, parent)
@@ -103,33 +113,41 @@ class SliceTree(object):
 
 
     def overlap_querry(self, _slice:slice):
-        start,stop,step = SliceTree.fix_interval(_slice, default_step=self.default_step)
-        querry_generator = self.__getitem__(_slice)
+
+        start,stop,step=SliceTree.fix_interval(_slice, default_step=self.default_step)
+        seq_max = start
+
+        querry_generator = self.__getitem__(slice(start,stop,step))
 
         running_node = next(querry_generator, None)
-        if not running_node:
+        if not running_node or stop<=running_node.start: ## If no solution
             yield None, (start,stop,step)
             return
         if start < running_node.start:
             yield None, (start, running_node.start, step)
+            seq_max = running_node.start
+        
+        
+        for node in querry_generator:
+            if seq_max >= stop: return
+            if running_node.stop >= stop: break
+            if node.start<=running_node.start: ## Update running node
+                if node.stop > running_node.stop:
+                    running_node = node
+            else: ## New running node
+                if node.stop > running_node.stop:
+                    yield running_node.value, (seq_max, running_node.stop, running_node.step)
+                    seq_max = running_node.stop
+                    if seq_max < node.start: ## Gap
+                        yield None, (seq_max, node.start, step)
+                        seq_max = node.start
+                    running_node = node
+        if seq_max < running_node.stop and seq_max < stop:
+            yield running_node.value, (seq_max, min(running_node.stop, stop), running_node.step)
+            seq_max = min(running_node.stop, stop)
+        if seq_max < stop:
+            yield None, (seq_max, stop, step)
 
-        while running_node.stop+1<stop:
-            next_node = next(querry_generator, None)
-            if not next_node:
-                yield running_node.value, (running_node.start, running_node.stop, running_node.step)
-                if running_node.stop < stop:
-                    yield None, (running_node.stop+1, stop, step)
-                return
-            if next_node.start <= running_node.start: ## Update running_node
-                if next_node.stop > running_node.stop:
-                    running_node = next_node
-            else: ## New increased running_node
-                if next_node.stop > running_node.stop: ## next_node improves score
-                    yield running_node.value, (running_node.start, running_node.stop, running_node.step)
-                    if running_node.stop < next_node.start: ## If gap between running_node and next_node
-                        yield None, (running_node.stop, next_node.start, step)
-                    running_node = next_node
-        yield running_node.value, (running_node.start, running_node.stop, running_node.step)
 
 
 
@@ -140,7 +158,7 @@ class SliceTree(object):
     def fix_interval(_slice:slice, default_step=DEFAULT_STEP):
         ## Fix interval
         assert isinstance(_slice,slice)
-        start, stop, step = int(_slice.start), int(_slice.stop), _slice.step
+        start, stop, step = _slice.start, _slice.stop, _slice.step
         if not step: step = default_step
         if start>stop: ## FIX swap start and stop
             temp = start
@@ -239,6 +257,10 @@ class SliceTree(object):
         
         lower_node = self.find_lower_node(_slice)
         upper_node = self.find_upper_node(_slice)
+
+        if lower_node==upper_node:
+            yield False, upper_node
+            return
         
         """
             [If lower_node.stop < start --> gap between start and querry start
@@ -309,14 +331,15 @@ class SliceTree(object):
     def yield_wrapper(self, _slice:slice, node:Node):
         start,stop,step = SliceTree.fix_interval(_slice, default_step=self.default_step)
         if start<=node.start<stop and node.step<=step:
-            
             if self.align_intervals and ((node.start-start)%step!=0):
                 yield
                 return
             if self.align_steps and ((step%node.step)!=0):
                 yield
                 return
-
+            if step%node.step != 0: ## If the timesequence is not divisible
+                yield
+                return
             yield node
     
     def traverse_inorder_interior(self, _slice:slice, root:Node):
@@ -534,57 +557,65 @@ class SliceTree(object):
     
 
 
-intervals = [
-    (33,34,6,'a'),
-    (13,14,3,'b'),
-    (52,53,16,'c'),
-    (9,10,1,'d'),
-    (21,22,8,'e'),
-    (61,62,2,'e'),
-    (8,9,2,'fgh'),
-    (11,12,4,'b'),
-    (11,12,2,'jk'),
-    (1,2,1,'kl'),
-    (-10,-3,1,'kj'),
-    (-7,-2,1,'yes'),
-    (2,5,1,'target')
-]
+def driver():
+
+    intervals = [
+        (33,34,6,'a'),
+        (13,14,3,'b'),
+        (52,53,16,'c'),
+        (9,10,1,'d'),
+        (21,22,8,'e'),
+        (61,62,2,'e'),
+        (8,9,2,'fgh'),
+        (11,12,4,'b'),
+        (11,12,2,'jk'),
+        (1,2,1,'kl'),
+        (-10,-3,1,'kj'),
+        (-7,-2,1,'yes'),
+        (2,5,1,'target')
+    ]
 
 
-myTree = SliceTree(intervals)
+    myTree = SliceTree(intervals)
 
-print(myTree)
-
-
-# del myTree[33:34:6]
-# print(f"After Deleting: 33:34:6")
-# print(myTree)
-
-# # print(list(SliceTree.traverse(myTree.root)))
+    print(myTree)
 
 
-# del myTree[21:22:8]
-# print(f"After Deleting: 21:22:8")
-# print(myTree)
+    # del myTree[33:34:6]
+    # print(f"After Deleting: 33:34:6")
+    # print(myTree)
 
-# del myTree[11:15:4]
-# print(f"After Deleting: 11:15:4")
-# print(myTree)
+    # # print(list(SliceTree.traverse(myTree.root)))
 
 
-# print(list(SliceTree.traverse(myTree.root)))
+    # del myTree[21:22:8]
+    # print(f"After Deleting: 21:22:8")
+    # print(myTree)
+
+    # del myTree[11:15:4]
+    # print(f"After Deleting: 11:15:4")
+    # print(myTree)
 
 
-# print('-'*10, 'QUERRY [2:12:1]', '-'*10)
-# for item in myTree[2:12:1]:
-#     print(item)
-# print('-'*30)
+    # print(list(SliceTree.traverse(myTree.root)))
 
 
-for item in myTree.overlap_querry(slice(3,12,4)):
-    print(item)
+    # print('-'*10, 'QUERRY [2:12:1]', '-'*10)
+    # for item in myTree[2:12:1]:
+    #     print(item)
+    # print('-'*30)
 
 
-# for item in myTree.querry(slice(2,12,1)):
-#     print(item)
+    for item in myTree.overlap_querry(slice(51,80,16)):
+        # print(item)
+        pass
+
+
+    # for item in myTree.querry(slice(2,12,1)):
+    #     print(item)
+
+
+
+if __name__=='__main__':
+    driver()
 
