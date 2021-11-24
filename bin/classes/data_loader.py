@@ -10,12 +10,10 @@ import pandas as pd
 import numpy as np
 import requests
 
-from bin.classes.processor import Processor
+from processor import Processor
 
-# Custom imports
-# from .time import Time
-from bin.classes.Time import Time
-from bin.utils.stats import sharpe_ratio
+from .Time import Time
+from ..utils.stats import sharpe_ratio
 
 
 
@@ -23,12 +21,13 @@ from bin.utils.stats import sharpe_ratio
 TXT_DEL=' '
 CSV_DEL=','
 
+ROOT = '../../'
 
-DYNAMMIC_DATA_PATH = 'data/dynammic_data'
-HISOTICAL_DATA_PATH = 'data/historical_data'
-DATABASE_PATH = 'data/database.csv'
+DYNAMMIC_DATA_PATH = f'{ROOT}data/dynammic_data'
+HISOTICAL_DATA_PATH = f'{ROOT}data/historical_data'
+DATABASE_PATH = f'{ROOT}data/database.csv'
 METADATA_PATH = f'{HISOTICAL_DATA_PATH}/_metadata.txt'
-SR_PATH = 'data/_sharpe_ratios.txt'
+SR_PATH = f'{ROOT}data/_sharpe_ratios.txt'
 # DB_PATH = 'data/_cryptos_bnc.txt'
 
 
@@ -262,10 +261,18 @@ class TreeSymbolLoader:
 
 class TreeLoader:
     
-    def __init__(self):
+    def __init__(self, data={}):
         self.pc = Processor('bnc')
         self.id_to_load_ind = {}
         self.loaded_symbol_loaders = []
+
+        for symbol, symb_data in data.items():
+            for start_date, end_date, step_flag, value in symb_data:
+                start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
+                ## UNCOMMENT TO PUSH DATES
+                for item in self.loaded_symbol_loaders[self.id_to_load_ind[symbol]][start_Time:end_Time:Time.parse_interval_flag(step_flag)]:
+                    # print(item)
+                    pass
     
     def __getitem__(self, _id: str ) -> TreeSymbolLoader:
         assert isinstance(_id,str)
@@ -395,96 +402,3 @@ class DataLoader:
                     writer.writerows([[d['open_tmsp'], d['open']] for d in id_response])
 
 
-
-
-
-    
-
-
-
-
-if __name__=='__main__':
-    
-    
-    #################################
-    ## PULL STATIC HISTORICAL DATA ##
-    #################################
-    
-    db_start_date, db_end_date = (2021,1,28), (2021,4,1)
-    db_start_Time, db_end_Time = Time.date_to_Time(*db_start_date), Time.date_to_Time(*db_end_date)
-    
-    ## UNCOMMENT TO UPDATE SHARPE RATIOS
-    # pull_sharpe_ratios(start_Time=db_start_Time, end_Time=db_end_Time, interval_flag=interval_flag)
-    
-    ## UNCOMMENT TO 
-    # num_symbols = 100
-    # crypto_ids = get_best_stocks_from_CSV(SR_PATH, CSV_DEL, num_symbols)
-    
-    ## UNCOMMENT TO UPDATE HISTORICAL DATA
-    # DataLoader.pull_data(start_Time=db_start_Time, end_Time=db_end_Time, interval_flag=interval_flag, bnc_ids=crypto_ids)
-    
-    # data_loader = DataLoader()
-    
-    ## GET AVAILABLE IDS FROM DRIVE
-    # ids = data_loader.get_ids()
-    # print(ids)
-
-    
-    
-    ###################################
-    ## PULL DYNAMMIC HISTORICAL DATA ##
-    ###################################
-    
-    sample_symbol = 'BTCUSDT'
-    
-    
-    date_intervals = [
-        ((2021,1,28), (2021,2,1), '6h', 'v1'),
-        ((2020,12,16), (2020,12,23), '12h', 'v2'),
-        ((2021,1,29), (2021,2,1), '4h', 'v3'),
-        ((2020,11,19), (2020,11,22), '6h', 'v4'),
-        ((2020,11,29),  (2020,12,1), '8h', 'v5'),
-        ((2020,12,1), (2020,12,3), '4h', 'v6')
-    ]
-
-    tree_loader = TreeLoader()
-
-
-    
-    for start_date, end_date, step_flag, value in date_intervals:
-        start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
-        ## UNCOMMENT TO PUSH DATES
-        for item in tree_loader[sample_symbol][start_Time:end_Time:Time.parse_interval_flag(step_flag)]:
-            # print(item)
-            pass
-    
-    print(tree_loader[sample_symbol].slice_tree)
-
-
-
-
-    
-    ## QUERRYING
-    querry_interval_flag = '6h'
-    querry_sT, querry_eT = Time.date_to_Time(*(2021,1,1)), Time.date_to_Time(*(2021,11,1))
-    
-    data = list( tree_loader[sample_symbol][querry_sT:querry_eT:Time.parse_interval_flag(querry_interval_flag)] )
-    
-    ## VERIFY QUERRY
-    # data = list(data)
-    print('QUERRYING: ', querry_sT.get_psx_tmsp(), querry_eT.get_psx_tmsp())
-    
-    for datum in data:
-        print(datum)
-    print('-'*20)
-    
-    for datum_ind in range(len(data)-1):
-        datum, next_datum = data[datum_ind], data[datum_ind+1]
-        if datum[0]+Time.parse_interval_flag(querry_interval_flag) != next_datum[0]:
-            print(datum, next_datum)
-    
-    
-    # print(tree_loader[sample_symbol].slice_tree)
-    
-    
-    
