@@ -90,8 +90,7 @@ class SliceTree(object):
         if first_value[0]:
             yield from self.traverse_inorder_interior(_slice, first_value[1])
         else:
-            if first_value[1].stop >= _slice.start and _slice.step%first_value[1].step==0: ## TODO :: Mock yield wrapper, this needs improvement
-                yield first_value[1] ## Manually yield first_value as it may be outside start range
+            self.yield_wrapper(_slice, first_value[1], fix_start=False) ## Manually yield first_value as it may be outside start range
 
         for is_subtree, parent in querry_anc_generator:
             if is_subtree: yield from self.traverse_inorder_interior(_slice, parent)
@@ -328,9 +327,13 @@ class SliceTree(object):
     ## MINIMALLY VIABLE SEARCHING ##
     ################################
 
-    def yield_wrapper(self, _slice:slice, node:Node):
+    def yield_wrapper(self, _slice:slice, node:Node, fix_start=True):
         start,stop,step = SliceTree.fix_interval(_slice, default_step=self.default_step)
-        if start<=node.start<stop and node.step<=step:
+        if fix_start and start>node.start:
+            yield
+            return
+        
+        if node.start<stop and node.step<=step:
             if self.align_intervals and ((node.start-start)%step!=0):
                 yield
                 return

@@ -455,7 +455,8 @@ if __name__=='__main__':
         start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
         ## UNCOMMENT TO PUSH DATES
         for item in tree_loader[sample_symbol][start_Time:end_Time:Time.parse_interval_flag(step_flag)]:
-            print(item)
+            # print(item)
+            pass
     
     print(tree_loader[sample_symbol].slice_tree)
 
@@ -467,22 +468,20 @@ if __name__=='__main__':
     querry_interval_flag = '6h'
     querry_sT, querry_eT = Time.date_to_Time(*(2021,1,1)), Time.date_to_Time(*(2021,11,1))
     
-    # for datum in tree_loader[sample_symbol][querry_sT:querry_eT:Time.parse_interval_flag(querry_interval_flag)]:
-    #     print(datum)
-    # print('-'*30)
+    data = list( tree_loader[sample_symbol][querry_sT:querry_eT:Time.parse_interval_flag(querry_interval_flag)] )
     
     ## VERIFY QUERRY
     # data = list(data)
     print('QUERRYING: ', querry_sT.get_psx_tmsp(), querry_eT.get_psx_tmsp())
     
-    # for datum in data:
-    #     print(datum)
-    # print('-'*20)
+    for datum in data:
+        print(datum)
+    print('-'*20)
     
-    # for datum_ind in range(len(data)-1):
-    #     datum, next_datum = data[datum_ind], data[datum_ind+1]
-    #     if datum[0]+Time.parse_interval_flag(querry_interval_flag) != next_datum[0]:
-    #         print(datum, next_datum)
+    for datum_ind in range(len(data)-1):
+        datum, next_datum = data[datum_ind], data[datum_ind+1]
+        if datum[0]+Time.parse_interval_flag(querry_interval_flag) != next_datum[0]:
+            print(datum, next_datum)
     
     
     # print(tree_loader[sample_symbol].slice_tree)
