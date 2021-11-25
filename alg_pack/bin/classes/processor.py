@@ -14,13 +14,12 @@ import math
 
 
 from dotenv import load_dotenv
-from pycoingecko import CoinGeckoAPI
 import math
 # import backtester
 
 # Custom imports
-from Time import Time
-from ... import transforms
+from alg_pack.bin.classes.Time import Time
+from alg_pack.bin.utils.transforms import *
 
 ENV_PATH = '.env'
 

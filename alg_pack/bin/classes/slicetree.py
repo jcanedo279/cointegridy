@@ -1,10 +1,9 @@
 from collections import deque
 from typing import Iterable
-from pytz import utc
 
 from treelib import Node, Tree
 
-from Time import Time
+from alg_pack.bin.classes.Time import Time
 
 
 DEFAULT_STEP = 1

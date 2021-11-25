@@ -1,8 +1,9 @@
 # Backtrader needs CSVs and is annoying.
 # Writing my own
 from datetime import timedelta
-from basket import Basket
-from bin import exceptions
+
+from alg_pack.bin.classes.basket import Basket
+from alg_pack.bin.exceptions import *
 
 #############################
 ## Backtesting Environment ##
@@ -44,7 +45,7 @@ class Event():
         self.target = target
 
         if direction not in ['over','under']:
-            raise exceptions.invalidDirection()
+            raise invalidDirection()
         
     def check(self,tmsp,prevstamp):
         # The .loc expressions for previous stamp need to be corrected so it can get the previous timestamp dynamically. I'm just dumb and don't know how to do that.
@@ -158,7 +159,7 @@ class Trader():
         elif trade_type in ['sell','short']:
             amount = abs(amount) * -1
         else:
-            raise exceptions.invalidTradeType()
+            raise invalidTradeType()
 
         #count = int(''.join([x for x in lag if x.isnumeric()]))
         count = int(lag[:-1])
@@ -171,7 +172,7 @@ class Trader():
             delta = timedelta(seconds = count*60)
         
         else:
-            raise exceptions.invalidLag()
+            raise invalidLag()
         
         execution_time = tmsp + delta
             

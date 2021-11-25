@@ -1,8 +1,5 @@
 
-
-from ..bin.classes.slicetree import SliceTree
-
-
+from alg_pack.bin.classes.slicetree import SliceTree
 
 def slicetree_driver():
     intervals = [

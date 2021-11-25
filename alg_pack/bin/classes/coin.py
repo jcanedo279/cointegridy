@@ -26,9 +26,9 @@ import numpy as np
 import sys
 
 # Custom Imports
-from .processor import *
-from ..utils import stats
-from ..utils import transforms
+from alg_pack.bin.classes.processor import *
+import alg_pack.bin.utils.stats
+import alg_pack.bin.utils.transforms
 
 class Coin():
 

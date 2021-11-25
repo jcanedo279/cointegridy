@@ -1,14 +1,6 @@
-import sys
-sys.path.append("../")
 
-import os
-print(os.getcwd())
-
-
-from bin.classes.Time import Time
-from bin.classes.data_loader import DataLoader, TreeLoader
-
-sys.path.pop()
+from alg_pack.bin.classes.Time import Time
+from alg_pack.bin.classes.data_loader import DataLoader, TreeLoader
 
 
 def data_loader_driver():
@@ -55,7 +47,7 @@ def data_loader_driver():
         ]
     }
 
-    tree_loader = TreeLoader()
+    tree_loader = TreeLoader(data=data)
 
     print(tree_loader[sample_symbol].slice_tree)
 
@@ -83,7 +75,7 @@ def data_loader_driver():
             print(datum, next_datum)
     
     
-    # print(tree_loader[sample_symbol].slice_tree)
+    print(tree_loader[sample_symbol].slice_tree)
 
 
 if __name__ == '__main__':

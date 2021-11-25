@@ -2,8 +2,9 @@
 # A bot with a wallet that covers a basket and makes trades
 
 import requests
-from basket import Basket
-import exceptions
+
+from alg_pack.bin.classes.basket import Basket
+import alg_pack.bin.classes.exceptions
 
 class Trader():
 

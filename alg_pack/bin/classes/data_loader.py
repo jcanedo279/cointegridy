@@ -3,25 +3,20 @@ import os
 from datetime import datetime
 from typing import Generator
 
-from slicetree import SliceTree
-from intervaltree import IntervalTree
-
 import pandas as pd
 import numpy as np
 import requests
 
-from processor import Processor
+from alg_pack.bin.classes.processor import Processor
+from alg_pack.bin.classes.Time import Time
+from alg_pack.bin.classes.slicetree import SliceTree
 
-from .Time import Time
-from ..utils.stats import sharpe_ratio
-
-
-
+from alg_pack.bin.utils.stats import sharpe_ratio
 
 TXT_DEL=' '
 CSV_DEL=','
 
-ROOT = '../../'
+ROOT = ''
 
 DYNAMMIC_DATA_PATH = f'{ROOT}data/dynammic_data'
 HISOTICAL_DATA_PATH = f'{ROOT}data/historical_data'
@@ -267,12 +262,13 @@ class TreeLoader:
         self.loaded_symbol_loaders = []
 
         for symbol, symb_data in data.items():
+            id_loader = TreeSymbolLoader(symbol, self.pc)
+            self.id_to_load_ind[symbol] = len(self.loaded_symbol_loaders)
             for start_date, end_date, step_flag, value in symb_data:
                 start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
-                ## UNCOMMENT TO PUSH DATES
-                for item in self.loaded_symbol_loaders[self.id_to_load_ind[symbol]][start_Time:end_Time:Time.parse_interval_flag(step_flag)]:
-                    # print(item)
+                for _ in id_loader[start_Time:end_Time:Time.parse_interval_flag(step_flag)]:
                     pass
+            self.loaded_symbol_loaders.append(id_loader)
     
     def __getitem__(self, _id: str ) -> TreeSymbolLoader:
         assert isinstance(_id,str)

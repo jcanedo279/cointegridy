@@ -1,4 +1,4 @@
-from ..bin.classes._time import Time
+from alg_pack.bin.classes.Time import Time
 from datetime import datetime, timezone
 
 NAT_TZ = 'America/Los_Angeles'
@@ -11,15 +11,7 @@ def test_1():
     
     ref_utc_time = Time.utcnow()
     
-    print(utc_time, ref_utc_time)
-    
-def test_2():
-    
-    ### test that utc
-    # print(time.time(), datetime.now(timezone.utc), datetime.utcnow())
-    print(datetime.now(timezone.utc).timestamp(), datetime.utcnow().timestamp())
-    pass
-
+    assert abs(utc_time-ref_utc_time) < 0.01
 
 
 
