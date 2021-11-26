@@ -1,6 +1,6 @@
 
-from alg_pack.bin.classes.Time import Time
-from alg_pack.bin.classes.data_loader import DataLoader, TreeLoader
+from cointegridy.src.classes.Time import Time
+from cointegridy.src.classes.data_loader import DataLoader, TreeLoader
 
 
 def data_loader_driver():

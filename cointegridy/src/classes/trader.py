@@ -3,8 +3,8 @@
 
 import requests
 
-from alg_pack.bin.classes.basket import Basket
-import alg_pack.bin.classes.exceptions
+from cointegridy.src.classes.basket import Basket
+import cointegridy.src.classes.exceptions
 
 class Trader():
 

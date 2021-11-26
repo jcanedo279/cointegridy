@@ -1,6 +1,6 @@
 # Portfolio Class
 
-from alg_pack.bin.classes.basket import Basket
+from cointegridy.src.classes.basket import Basket
 
 class Portfolio():
 

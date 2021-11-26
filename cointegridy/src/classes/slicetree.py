@@ -3,7 +3,7 @@ from typing import Iterable
 
 from treelib import Node, Tree
 
-from alg_pack.bin.classes.Time import Time
+from cointegridy.src.classes.Time import Time
 
 
 DEFAULT_STEP = 1

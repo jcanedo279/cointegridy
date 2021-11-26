@@ -1,4 +1,4 @@
-from alg_pack.bin.classes.Time import Time
+from cointegridy.src.classes.Time import Time
 from datetime import datetime, timezone
 
 NAT_TZ = 'America/Los_Angeles'
@@ -11,6 +11,8 @@ def test_1():
     
     ref_utc_time = Time.utcnow()
     
+    print(loc_time, utc_time, ref_utc_time)
+    
     assert abs(utc_time-ref_utc_time) < 0.01
 
 
@@ -19,10 +21,9 @@ def test_1():
 ## Driver ##
 ############
 
-def test_driver():
+def test_Time():
     test_1()
-    test_2()
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     
-    test_driver()
+#     test_Time()

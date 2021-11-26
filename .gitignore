@@ -138,7 +138,7 @@ dmypy.json
 
 important.txt
 requirements.txt
-get-pip.py
+*get-pip.py
 
 *historical_data/*
 *dynammic_data/*

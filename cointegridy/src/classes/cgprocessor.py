@@ -10,9 +10,9 @@ import copy
 import sys
 
 
-from alg_pack.bin.classes.Time import Time
-from alg_pack.bin.utils.stats import *
-from alg_pack.bin.utils.transforms import *
+from cointegridy.src.classes.Time import Time
+from cointegridy.src.utils.stats import *
+from cointegridy.src.utils.transforms import *
 
 class CGProcessor:
     

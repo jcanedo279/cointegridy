@@ -2,8 +2,8 @@
 # Writing my own
 from datetime import timedelta
 
-from alg_pack.bin.classes.basket import Basket
-from alg_pack.bin.exceptions import *
+from cointegridy.src.classes.basket import Basket
+from cointegridy.src.exceptions import *
 
 #############################
 ## Backtesting Environment ##

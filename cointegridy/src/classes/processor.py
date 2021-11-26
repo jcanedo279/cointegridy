@@ -18,8 +18,12 @@ import math
 # import backtester
 
 # Custom imports
-from alg_pack.bin.classes.Time import Time
-from alg_pack.bin.utils.transforms import *
+from cointegridy.src.classes.Time import Time
+from cointegridy.src.utils.transforms import *
+
+
+
+
 
 ENV_PATH = '.env'
 

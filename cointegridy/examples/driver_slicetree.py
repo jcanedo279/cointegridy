@@ -1,5 +1,5 @@
 
-from alg_pack.bin.classes.slicetree import SliceTree
+from cointegridy.src.classes.slicetree import SliceTree
 
 def slicetree_driver():
     intervals = [

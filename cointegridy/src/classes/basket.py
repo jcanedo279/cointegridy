@@ -42,8 +42,8 @@ import statsmodels.api as sm
 from statsmodels.tsa.stattools import coint
 
 # Custom Imports
-from alg_pack.bin.classes.processor import Processor
-from alg_pack.bin.utils.stats import *
+from cointegridy.src.classes.processor import Processor
+from cointegridy.src.utils.stats import *
 
 
 class Basket():

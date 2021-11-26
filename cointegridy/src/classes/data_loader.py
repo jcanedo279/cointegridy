@@ -7,11 +7,11 @@ import pandas as pd
 import numpy as np
 import requests
 
-from alg_pack.bin.classes.processor import Processor
-from alg_pack.bin.classes.Time import Time
-from alg_pack.bin.classes.slicetree import SliceTree
+from cointegridy.src.classes.processor import Processor
+from cointegridy.src.classes.Time import Time
+from cointegridy.src.classes.slicetree import SliceTree
 
-from alg_pack.bin.utils.stats import sharpe_ratio
+from cointegridy.src.utils.stats import sharpe_ratio
 
 TXT_DEL=' '
 CSV_DEL=','

@@ -11,7 +11,7 @@ class egg_info_parse(egg_info):
         if not self.distribution.have_run.get('install', True):
             # `install` command is in progress, copy license
             self.mkpath(self.egg_info)
-            self.copy_file('LICENSE', self.egg_info)
+            self.copy_file('LICENSE.txt', self.egg_info)
 
         egg_info.run(self)
 
@@ -19,17 +19,17 @@ class egg_info_parse(egg_info):
 
 
 setup_config = {
-    'name': 'alg_pack',
+    'name': 'cointegridy',
     
     'version': '0.0.1',
     
-    'license_files': ('LICENSE',),
+    'license': 'MIT',
     
     'author': 'Jorge Canedo, Thomas Cintra, David Pitt',
     
-    'url': 'https://github.com/jcanedo279/algo_trading',
+    'url': 'https://github.com/jcanedo279/cointegridy',
     
-    # 'cmdclass': {'egg_info': egg_info_parse}, ## Include LICENSE.txt into package
+    'cmdclass': {'egg_info': egg_info_parse}, ## Include LICENSE.txt into package
     
     # 'packages': 'setup.my_test_suite', ## TODO:: Apparently dangerous, look into endpoints
     
@@ -56,6 +56,12 @@ setup_config = {
     'test_suite': 'tests',
     
     'tests_require': ('pytest',),
+    
+    'classifiers': (
+        "Programming Language :: Python :: 3",
+        "License :: MIT License",
+        "Operating System :: LINUX + OS",
+    ),
 }
 
 
