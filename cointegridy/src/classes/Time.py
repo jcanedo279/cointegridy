@@ -84,7 +84,7 @@ class Time:
             days = seconds // 60*60*24
             seconds = seconds - days*60*60*24
             
-        delta = timedelta(seconds=seconds, days=days)
+        delta = timedelta(seconds=seconds, days=days) ## avoid seconds limit
         self.utc_dtobj += delta
 
         
@@ -231,10 +231,9 @@ class Time:
         pass
 
 
+
+
 ZERO = timedelta(0)
-
-
-
 class UTC(tzinfo):
     """UTC"""
 

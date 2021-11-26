@@ -7,10 +7,10 @@ UTILS_PATH = '/cointegridy/src/utils/'
 SCRIPTS_PATH = '/cointegridy/scripts/'
 EXAMPLES_PATH = '/cointegridy/examples/'
 
-INVALID_FILENAMES = {'__pycache__'}
+INVALID_FILENAMES = {'__pycache__', '.DS_Store'}
 
 
-def test_cointegridy():
+def test_cointegridy_compiles():
     
     for _dir in [CLASSES_PATH, UTILS_PATH, SCRIPTS_PATH, EXAMPLES_PATH]:
 
@@ -31,10 +31,3 @@ def test_cointegridy():
                 is_vaid = False
             
             assert is_valid, f'class \'{filename[:-3]}\' contains un-interpretable code'
-
-
-
-
-
-# source = open(your_python_script_name, 'r').read() + '\n'
-# compile(source, your_python_script_name, 'exec')

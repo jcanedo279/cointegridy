@@ -108,49 +108,6 @@ class SliceTree(object):
         return '-'*20
 
 
-
-
-    def overlap_querry(self, _slice:slice):
-
-        start,stop,step=SliceTree.fix_interval(_slice, default_step=self.default_step)
-        seq_max = start
-
-        querry_generator = self.__getitem__(slice(start,stop,step))
-
-        running_node = next(querry_generator, None)
-        if not running_node or stop<=running_node.start: ## If no solution
-            yield None, (start,stop,step)
-            return
-        if start < running_node.start:
-            yield None, (start, running_node.start, step)
-            seq_max = running_node.start
-        
-        
-        for node in querry_generator:
-            if seq_max >= stop: return
-            if running_node.stop >= stop: break
-            if node.start<=running_node.start: ## Update running node
-                if node.stop > running_node.stop:
-                    running_node = node
-            else: ## New running node
-                if node.stop > running_node.stop:
-                    yield running_node.value, (seq_max, running_node.stop, running_node.step)
-                    seq_max = running_node.stop
-                    if seq_max < node.start: ## Gap
-                        yield None, (seq_max, node.start, step)
-                        seq_max = node.start
-                    running_node = node
-        if seq_max < running_node.stop and seq_max < stop:
-            yield running_node.value, (seq_max, min(running_node.stop, stop), running_node.step)
-            seq_max = min(running_node.stop, stop)
-        if seq_max < stop:
-            yield None, (seq_max, stop, step)
-
-
-
-
-    
-
     ##### CORRECT INPUT INTERVAL #####
     @staticmethod
     def fix_interval(_slice:slice, default_step=DEFAULT_STEP):
@@ -249,7 +206,43 @@ class SliceTree(object):
     ####################
     ## TREE QUERRYING ##
     ####################
+    
+    def full_querry(self, _slice:slice):
+        start,stop,step=SliceTree.fix_interval(_slice, default_step=self.default_step)
+        seq_max = start
 
+        querry_generator = self.__getitem__(slice(start,stop,step))
+
+        running_node = next(querry_generator, None)
+        if not running_node or stop<=running_node.start: ## If no solution
+            yield None, (start,stop,step)
+            return
+        if start < running_node.start:
+            yield None, (start, running_node.start, step)
+            seq_max = running_node.start
+        
+        
+        for node in querry_generator:
+            if seq_max >= stop: return
+            if running_node.stop >= stop: break
+            if node.start<=running_node.start: ## Update running node
+                if node.stop > running_node.stop:
+                    running_node = node
+            else: ## New running node
+                if node.stop > running_node.stop:
+                    yield running_node.value, (seq_max, running_node.stop, running_node.step)
+                    seq_max = running_node.stop
+                    if seq_max < node.start: ## Gap
+                        yield None, (seq_max, node.start, step)
+                        seq_max = node.start
+                    running_node = node
+        if seq_max < running_node.stop and seq_max < stop:
+            yield running_node.value, (seq_max, min(running_node.stop, stop), running_node.step)
+            seq_max = min(running_node.stop, stop)
+        if seq_max < stop:
+            yield None, (seq_max, stop, step)
+
+    
     def querry_anc(self, _slice:slice):
         if not self.root: return
         

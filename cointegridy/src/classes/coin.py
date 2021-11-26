@@ -27,8 +27,8 @@ import sys
 
 # Custom Imports
 from cointegridy.src.classes.processor import *
-import cointegridy.src.utils.stats
-import cointegridy.src.utils.transforms
+import cointegridy.src.utils.stats as stats
+import cointegridy.src.utils.transforms as transforms
 
 class Coin():
 

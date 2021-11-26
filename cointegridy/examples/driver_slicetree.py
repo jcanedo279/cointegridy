@@ -49,7 +49,7 @@ def slicetree_driver():
     # print('-'*30)
     
     
-    for item in myTree.overlap_querry(slice(51,80,16)):
+    for item in myTree.full_querry(slice(51,80,16)):
         # print(item)
         pass
 

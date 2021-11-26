@@ -43,7 +43,7 @@ from statsmodels.tsa.stattools import coint
 
 # Custom Imports
 from cointegridy.src.classes.processor import Processor
-from cointegridy.src.utils.stats import *
+import cointegridy.src.utils.stats as stats
 
 
 class Basket():
@@ -141,7 +141,7 @@ class Basket():
         if not self.is_valid():
             raise("Basket is invalid, timeseries are not I(1)")
 
-        return stat.is_stationary(spread, pct=pct)
+        return stats.is_stationary(spread, pct=pct)
     
     def is_valid(self):
         """

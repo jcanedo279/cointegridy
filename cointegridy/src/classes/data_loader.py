@@ -183,7 +183,7 @@ class TreeSymbolLoader:
         ## Yield results from local and bnc
         cached_missing = set()
         running_max = start-1
-        for filename, interval in self.slice_tree.overlap_querry(slice(start,stop,step)):
+        for filename, interval in self.slice_tree.full_querry(slice(start,stop,step)):
             if not filename: ## Stash this interval to put into memory later
                 cached_missing.add(interval)
             
