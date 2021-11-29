@@ -2,6 +2,7 @@ import os
 
 
 ROOT = os.getcwd()
+ 
 CLASSES_PATH = '/cointegridy/src/classes/'
 UTILS_PATH = '/cointegridy/src/utils/'
 SCRIPTS_PATH = '/cointegridy/scripts/'
@@ -24,10 +25,7 @@ def test_cointegridy_compiles():
             
             if not source: continue
             
-            is_valid = True
             try:
-                out = compile(source, ROOT+_dir+filename, 'exec')
+                compile(source, ROOT+_dir+filename, 'exec')
             except:
-                is_vaid = False
-            
-            assert is_valid, f'class \'{filename[:-3]}\' contains un-interpretable code'
+                assert False, f'class \'{filename[:-3]}\' contains un-interpretable code'

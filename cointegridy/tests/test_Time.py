@@ -15,15 +15,3 @@ def test_1():
     
     assert abs(utc_time-ref_utc_time) < 0.01
 
-
-
-############
-## Driver ##
-############
-
-def test_Time():
-    test_1()
-
-# if __name__ == '__main__':
-    
-#     test_Time()
