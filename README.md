@@ -1,4 +1,14 @@
 
+<h1 align="center">Cointegridy</h1>
+
+![Epic Logo](./misc/img/Cointegridy_logo.png)
+<style type="text/css">
+    img {
+        width: 400px;
+        display: block;
+        margin: 0 auto;
+    }
+</style>
 
 
 Cointegridy Package Usage
