@@ -57,11 +57,11 @@ setup_config = {
     
     'tests_require': ('pytest',),
     
-    'classifiers': (
+    'classifiers': [
         "Programming Language :: Python :: 3",
         "License :: MIT License",
         "Operating System :: LINUX + OS",
-    ),
+    ],
 }
 
 

@@ -23,9 +23,6 @@ class SliceNode(object):
         
         self.height = 1
     
-    def __slice__(self):
-        return (self.start, self.stop, self.step)
-    
     def __hash__(self):
         return hash(self.__slice__())
     
@@ -42,6 +39,9 @@ class SliceNode(object):
             return f'{Time(utc_tmsp=self.start)}  ::  {Time(utc_tmsp=self.stop)}  ::  {i_flag}'
         
         return f'{self.start}:{self.stop}:{self.step} >> {self.value}'
+    
+    def __slice__(self):
+        return (self.start, self.stop, self.step)
     
     def patch(self):
         self._min,self._max,self._min_step,self._max_start,self.height = SliceTree.subtree_data(self)
@@ -113,7 +113,6 @@ class SliceTree(object):
     ##################################
     @staticmethod
     def fix_interval(_slice:slice, default_step=DEFAULT_STEP):
-        ## Fix interval
         if type(_slice) == int: ## FIX slice is an index
             return (_slice,_slice,0)
         assert isinstance(_slice,slice)
@@ -334,17 +333,13 @@ class SliceTree(object):
             yield node
             return
         if fix_start and start>node.start:
-            yield
             return
         if node.start<=stop and node.step<=step:
             if self.align_intervals and ((node.start-start)%step!=0):
-                yield
                 return
             if self.align_steps and ((step%node.step)!=0):
-                yield
                 return
             if step%node.step != 0: ## If the timesequence is not divisible
-                yield
                 return
             yield node
     
@@ -428,24 +423,6 @@ class SliceTree(object):
                 frontier.appendleft(node.right)
         return min_node
     
-    ## TODO:: EXPERIMENTAL :: NOT SURE IF NECESSARY
-    @staticmethod
-    def find_first_equivilancy(_slice:slice, cur_node:SliceNode):
-        """
-            [Given some cur_node with start,stop defined by _slice, returns the first node in cur_node's subtree
-             with step defined by _slice]
-        """
-        start,stop,step = SliceTree.fix_interval(_slice)
-        if cur_node.start!=start or cur_node.stop!=stop: return None
-        if cur_node.step==step: return cur_node
-        if cur_node.right:
-            right = SliceTree.find_first_equivilancy(_slice, cur_node.right)
-            if right: return right
-        if cur_node.left:
-            left = SliceTree.find_first_equivilancy(_slice, cur_node.left)
-            if left: return left
-        return cur_node
-
 
     ######################
     ## TREE REBALANCING ##

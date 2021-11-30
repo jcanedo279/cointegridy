@@ -47,12 +47,3 @@ def test_edges():
     assert list(my_tree[7:10:3]) == [SliceNode(1,7,step=3), SliceNode(7,10,step=3)]
     assert list(my_tree[10:13:3]) == [SliceNode(7,10,step=3)]
 
-
-
-
-
-if __name__=='__main__':
-    test_null()
-    test_point_querry()
-    test_edges()
-
