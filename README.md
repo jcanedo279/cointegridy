@@ -1,15 +1,9 @@
 
 <h1 align="center">Cointegridy</h1>
 
-![Epic Logo](./misc/img/Cointegridy_logo.png)
-<style type="text/css">
-    img {
-        width: 400px;
-        display: block;
-        margin: 0 auto;
-    }
-</style>
-
+<div align="center">
+    <img width="400" src="./misc/img/Cointegridy_logo.png" alt="Insert Epic Logo">
+</div>
 
 Cointegridy Package Usage
 -------------------------
@@ -30,4 +24,65 @@ Cointegridy Package Usage
 
 
 
+Cointegridy Project Structure
+-----------------------------
 
+```
+cointegridy
+├─ .gitignore
+├─ .vscode
+├─ LICENSE.txt
+├─ README.md
+├─ cointegridy
+│  ├─ dev
+│  │  ├─ dhpitt_dev
+│  │  │  └─ cointegration_dp.ipynb
+│  │  ├─ jcanedo_dev
+│  │  │  ├─ cryptos_bnc.txt
+│  │  │  └─ processor_testor.ipynb
+│  │  └─ tcintra_dev
+│  │     ├─ processing.ipynb
+│  │     └─ processing.py
+│  ├─ examples
+│  │  ├─ driver_data_loader.py
+│  │  └─ driver_slicetree.py
+│  ├─ scripts
+│  │  ├─ cointegration.ipynb
+│  │  ├─ oracle.ipynb
+│  │  └─ stationarity_tests.ipynb
+│  ├─ src
+│  │  ├─ classes
+│  │  │  ├─ Time.py
+│  │  │  ├─ backtest.py
+│  │  │  ├─ basket.py
+│  │  │  ├─ cgprocessor.py
+│  │  │  ├─ coin.py
+│  │  │  ├─ data_loader.py
+│  │  │  ├─ exceptions.py
+│  │  │  ├─ oracle.py
+│  │  │  ├─ portfolio.py
+│  │  │  ├─ processor.py
+│  │  │  ├─ slicetree.py
+│  │  │  └─ trader.py
+│  │  ├─ exceptions.py
+│  │  └─ utils
+│  │     ├─ stats.py
+│  │     └─ transforms.py
+│  └─ tests
+│     ├─ test_Time.py
+│     ├─ test_cointegridy.py
+│     ├─ test_data_loader.py
+│     └─ test_slicetree.py
+├─ data
+│  ├─ _cryptos_bnc.txt
+│  └─ _sharpe_ratios.txt
+├─ misc
+│  └─ img
+│     ├─ Cointegridy_logo.ai
+│     ├─ Cointegridy_logo.png
+│     └─ Cointegridy_logo_small.jpg
+├─ setup.cfg
+├─ setup.py
+└─ workspace.code-workspace
+
+```
