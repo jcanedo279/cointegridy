@@ -128,12 +128,20 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Github stuff
+.git/
+
 
 
 ############
 ## CUSTOM ##
 ############
 
+*.DS_Store
+
 important.txt
 requirements.txt
-get-pip.py
+*get-pip.py
+
+*historical_data/*
+*dynammic_data/*
