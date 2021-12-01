@@ -182,8 +182,12 @@ class TreeSymbolLoader:
         
         ## Yield results from local and bnc
         cached_missing = set()
-        running_max = start-1
-        for filename, interval in self.slice_tree.full_querry(slice(start,stop,step)):
+        running_max, seq_targ = float('-inf'), start
+        for filename, interval in self.slice_tree[start:stop:step]:
+            print('interval', filename, interval)
+            print('running', running_max, seq_targ)
+            print('----------')
+            
             if not filename: ## Stash this interval to put into memory later
                 cached_missing.add(interval)
             
@@ -198,11 +202,13 @@ class TreeSymbolLoader:
                 for sub_dirname in os.listdir(self.data_dir+cur_rep):
                     sub_dirname_P = sub_dirname[:-4] if sub_dirname.endswith('.csv') else sub_dirname
                     s_start,s_stop,s_step = [float(x) for x in sub_dirname_P.split('_')]
-                    if running_max < s_stop:
+                    if running_max <= _stop:
                         for datum, running_max in self.pull_seq_from_loaded(cur_rep+sub_dirname, running_max):
-                            yield datum
-                    else:
-                        break
+                            if running_max==seq_targ:
+                                yield datum
+                                seq_targ += step
+                    else: break
+                running_max = seq_targ - step
             
             else: ## File does not exist
                 c_start = _start
@@ -210,9 +216,10 @@ class TreeSymbolLoader:
                     for datum, running_max in self.pull_seq_from_bnc(c_start,c_start+step*DEFAULT_NUM_STEPS,running_max,interval_flag=i_flag):
                         yield datum
                     c_start += step*DEFAULT_NUM_STEPS
-                if c_start < _stop:
+                if c_start <= _stop:
                     for datum, running_max in self.pull_seq_from_bnc(c_start,_stop,running_max,interval_flag=i_flag):
                         yield datum
+                seq_targ = running_max + step
         
         ## Add cached_missing to local
         for c_start,c_stop,c_step in cached_missing:
@@ -233,9 +240,30 @@ class TreeSymbolLoader:
                     writer = csv.writer(f_writer)
                     for datum in self.pc.id_to_ohlc_seq(self.id, Time(utc_tmsp=float(cache_start)), Time(utc_tmsp=c_stop), interval_flag=c_iflag):
                         writer.writerow([float(datum['open_tmsp']), float(datum['open'])])
+            print(cache_start+c_step, c_stop)
             
             self.slice_tree[c_start:c_stop:c_step] = c_rep
+        
+            
+            
+        
+        print('final', seq_targ, running_max, stop)
+        print('--------------------------')
+        # if seq_targ+step < stop:
+        #     yield from self.hacky_pull(seq_targ, stop, step, i_flag)
+            
+        
     
+    def hacky_pull(self, seq_targ, stop, step, i_flag):
+        c_start = seq_targ
+        while c_start+step*DEFAULT_NUM_STEPS <= stop:
+            for datum, running_max in self.pull_seq_from_bnc(c_start,c_start+step*DEFAULT_NUM_STEPS,float('-inf'),interval_flag=i_flag):
+                yield datum
+            c_start += step*DEFAULT_NUM_STEPS
+        if c_start < stop:
+            for datum, running_max in self.pull_seq_from_bnc(c_start,stop,float('-inf'),interval_flag=i_flag):
+                yield datum
+        
     
     
     def pull_seq_from_loaded(self, filename, running_max):
@@ -243,7 +271,7 @@ class TreeSymbolLoader:
             reader = csv.reader(f_reader)
             for line in reader:
                 tmsp = float(line[0])
-                if tmsp > running_max:
+                if tmsp >= running_max:
                     yield (tmsp, float(line[1])), max(tmsp, running_max)
     
     

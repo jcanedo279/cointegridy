@@ -1,0 +1,55 @@
+
+from cointegridy.src.classes.data_loader import TreeLoader
+from cointegridy.src.classes.Time import Time
+
+
+def test_data_loader():
+    print('Starting big yikes analysis')
+    
+    samp_symbol = 'BTCUSDT'
+
+    samp_data = {
+        'BTCUSDT': [
+            ((2021,1,28), (2021,2,1), '6h', 'v1'),
+            ((2020,12,16), (2020,12,23), '12h', 'v2'),
+            ((2021,1,29), (2021,2,1), '4h', 'v3'),
+            ((2020,11,19), (2020,11,22), '6h', 'v4'),
+            ((2020,11,29),  (2020,12,1), '8h', 'v5'),
+            ((2020,12,1), (2020,12,3), '4h', 'v6')
+        ]
+    }
+
+    tree_loader = TreeLoader(data=samp_data)
+    
+    
+    
+    samp_querries = {
+        # ((2020,12,28), (2021,1,1), '12h'),
+        ((2021,1,1), (2021,11,1), '6h'),
+        # ((2021,11,1), (2021,11,2), '1h'),
+    }
+    
+    for samp_sd,samp_ed,samp_iflag in samp_querries:
+        ## QUERRYING
+        querry_sT, querry_eT = Time.date_to_Time(*samp_sd), Time.date_to_Time(*samp_ed)
+    
+        data = list( tree_loader[samp_symbol][querry_sT:querry_eT:Time.parse_interval_flag(samp_iflag)] )
+        
+        ## VERIFY QUERRY
+        
+        assert data[0][0] == querry_sT.get_psx_tmsp()
+        
+        for datum_ind in range(len(data)-1):
+            datum, next_datum = data[datum_ind], data[datum_ind+1]
+            if datum[0]+Time.parse_interval_flag(samp_iflag) != next_datum[0]:
+                pass
+                # print(datum, next_datum)
+                # print(Time(utc_tmsp=datum[0]), Time(utc_tmsp=next_datum[0]))
+        
+        # print(data[-1][0], querry_eT.get_psx_tmsp())
+        print('-'*30)
+    
+    
+if __name__ == '__main__':
+    test_data_loader()
+
