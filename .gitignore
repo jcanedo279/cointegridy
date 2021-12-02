@@ -143,5 +143,5 @@ important.txt
 # requirements.txt
 *get-pip.py
 
-*historical_data/*
-*dynammic_data/*
+data/historical_data/*
+data/dynammic_data/*
