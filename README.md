@@ -5,14 +5,14 @@
     <img width="400" src="./misc/img/Cointegridy_logo.png" alt="Insert Epic Logo">
 </div>
 
+<br />
+
 Cointegridy Package Usage
 -------------------------
 
  * **package installation:** `pip install -e .`
    
    Running this command from the root of the workspace will install the cointegridy package. The flag `-e` makes sure the cointegridy package is editable so we don't hae to re-install the package.
-    
-    <br />
 
 * **package testing:** `python setup.py test [--addopts <pathFromCWDToTestFileName>.py::<test_method>]`
 
@@ -20,9 +20,7 @@ Cointegridy Package Usage
 
     Running this command with the optional `--addopts <pathFromCWDToTestFileName>.py` will specify a test file to run. Running this command with the optional `--addopts <pathFromCWDToTestFileName>.py::<test_method>` will limit the test to a specific method.
 
-
-
-
+<br />
 
 Cointegridy Project Structure
 -----------------------------
@@ -84,5 +82,4 @@ cointegridy
 ├─ setup.cfg
 ├─ setup.py
 └─ workspace.code-workspace
-
 ```

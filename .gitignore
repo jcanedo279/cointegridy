@@ -140,7 +140,7 @@ dmypy.json
 *.DS_Store
 
 important.txt
-requirements.txt
+# requirements.txt
 *get-pip.py
 
 *historical_data/*

@@ -82,19 +82,7 @@ class SliceTree(object):
         self.root = SliceTree.delete_node(_slice, self.root, None, default_step=self.default_step)
     
     def __getitem__(self, _slice:slice):
-        querry_anc_generator = self.querry_anc(_slice)
-
-        first_value = next(querry_anc_generator, None)
-        if not first_value:
-            return
-        if first_value[0]:
-            yield from self.traverse_inorder_interior(_slice, first_value[1])
-        else:
-            yield from self.yield_wrapper(_slice, first_value[1], fix_start=False) ## Manually yield first_value as it may be outside start range
-
-        for is_subtree, parent in querry_anc_generator:
-            if is_subtree: yield from self.traverse_inorder_interior(_slice, parent)
-            else: yield from self.yield_wrapper(_slice, parent)
+        return self.full_querry(_slice)
     
     def __repr__(self):
         if not self.root:
@@ -212,22 +200,45 @@ class SliceTree(object):
     ## TREE QUERRYING ##
     ####################
     
+    def querry(self, _slice:slice):
+        querry_anc_generator = self.querry_anc(_slice)
+
+        first_value = next(querry_anc_generator, None)
+        while first_value:
+            if first_value[1].stop < _slice.start:
+                first_value = next(querry_anc_generator, None)
+                continue
+            if first_value[0]:
+                yield from self.traverse_inorder_interior(_slice, first_value[1])
+            else:
+                yield from self.yield_wrapper(_slice, first_value[1], fix_start=False) ## Manually yield first_value as it may be outside start range
+            if first_value[1].stop >= _slice.start: break
+            first_value = next(querry_anc_generator, None)
+        if not first_value:
+            return
+
+        for is_subtree, parent in querry_anc_generator:
+            if is_subtree: yield from self.traverse_inorder_interior(_slice, parent)
+            else: yield from self.yield_wrapper(_slice, parent)
+        
+        
+    
     def full_querry(self, _slice:slice):
         start,stop,step=SliceTree.fix_interval(_slice, default_step=self.default_step)
         seq_max = start
 
-        querry_generator = self.__getitem__(slice(start,stop,step))
-
+        querry_generator = self.querry(slice(start,stop,step))
+        
         running_node = next(querry_generator, None)
         if not running_node or stop<running_node.start: ## If no solution
             yield None, (start,stop,step)
             return
-        if start==stop:
+        if start==stop: ## If point querry --> single solution
             yield running_node.value, (seq_max,seq_max,0)
         if start < running_node.start:
             yield None, (start, running_node.start, step)
             seq_max = running_node.start
-        
+            
         
         for node in querry_generator:
             if seq_max >= stop: return
@@ -329,17 +340,20 @@ class SliceTree(object):
 
     def yield_wrapper(self, _slice:slice, node:SliceNode, fix_start=True):
         start,stop,step = SliceTree.fix_interval(_slice, default_step=self.default_step)
-        if (start==stop and step==0) and (node.start<=start<=node.stop):
-            yield node
-            return
-        if fix_start and start>node.start:
+        if start==stop and step==0: ## Handle point yields
+            if node.start<=start<=node.stop:
+                yield node
+                return
+            else:
+                return
+        if fix_start and node.start<start:
             return
         if node.start<=stop and node.step<=step:
             if self.align_intervals and ((node.start-start)%step!=0):
                 return
             if self.align_steps and ((step%node.step)!=0):
                 return
-            if step%node.step != 0: ## If the timesequence is not divisible
+            if (step%node.step)!=0: ## If the timestep is not divisible
                 return
             yield node
     

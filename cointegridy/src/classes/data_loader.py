@@ -182,8 +182,9 @@ class TreeSymbolLoader:
         
         ## Yield results from local and bnc
         cached_missing = set()
-        running_max = start-1
-        for filename, interval in self.slice_tree.full_querry(slice(start,stop,step)):
+        running_max, seq_targ = start-1, start
+        for filename, interval in self.slice_tree[start:stop:step]:
+            
             if not filename: ## Stash this interval to put into memory later
                 cached_missing.add(interval)
             
@@ -195,14 +196,16 @@ class TreeSymbolLoader:
                 os.mkdir(self.data_dir+cur_rep)
             
             if filename: ## File exists
-                for sub_dirname in os.listdir(self.data_dir+cur_rep):
+                for sub_dirname in sorted(os.listdir(self.data_dir+cur_rep)): ## TODO:: AT SOME POINT OPTIMIZE THIS SUB STRUCTURE
                     sub_dirname_P = sub_dirname[:-4] if sub_dirname.endswith('.csv') else sub_dirname
                     s_start,s_stop,s_step = [float(x) for x in sub_dirname_P.split('_')]
-                    if running_max < s_stop:
+                    if running_max <= _stop:
                         for datum, running_max in self.pull_seq_from_loaded(cur_rep+sub_dirname, running_max):
-                            yield datum
-                    else:
-                        break
+                            if running_max==seq_targ:
+                                yield datum
+                                seq_targ += step
+                    else: break
+                running_max = seq_targ - step
             
             else: ## File does not exist
                 c_start = _start
@@ -210,9 +213,10 @@ class TreeSymbolLoader:
                     for datum, running_max in self.pull_seq_from_bnc(c_start,c_start+step*DEFAULT_NUM_STEPS,running_max,interval_flag=i_flag):
                         yield datum
                     c_start += step*DEFAULT_NUM_STEPS
-                if c_start < _stop:
+                if c_start <= _stop:
                     for datum, running_max in self.pull_seq_from_bnc(c_start,_stop,running_max,interval_flag=i_flag):
                         yield datum
+                seq_targ = running_max + step
         
         ## Add cached_missing to local
         for c_start,c_stop,c_step in cached_missing:
@@ -243,7 +247,7 @@ class TreeSymbolLoader:
             reader = csv.reader(f_reader)
             for line in reader:
                 tmsp = float(line[0])
-                if tmsp > running_max:
+                if tmsp >= running_max:
                     yield (tmsp, float(line[1])), max(tmsp, running_max)
     
     
