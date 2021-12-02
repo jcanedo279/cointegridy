@@ -28,7 +28,6 @@ Cointegridy Project Structure
 ```
 cointegridy
 ├─ .gitignore
-├─ .vscode
 ├─ LICENSE.txt
 ├─ README.md
 ├─ cointegridy
@@ -72,13 +71,15 @@ cointegridy
 │     ├─ test_data_loader.py
 │     └─ test_slicetree.py
 ├─ data
-│  ├─ _cryptos_bnc.txt
-│  └─ _sharpe_ratios.txt
+│  ├─ dynammic_data
+│  └─ historical_data
 ├─ misc
-│  └─ img
-│     ├─ Cointegridy_logo.ai
-│     ├─ Cointegridy_logo.png
-│     └─ Cointegridy_logo_small.jpg
+│  ├─ img
+│  │  ├─ Cointegridy_logo.ai
+│  │  ├─ Cointegridy_logo.png
+│  │  └─ Cointegridy_logo_small.jpg
+│  └─ requirements.txt
+├─ requirements.txt
 ├─ setup.cfg
 ├─ setup.py
 └─ workspace.code-workspace

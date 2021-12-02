@@ -58,7 +58,7 @@ class SliceTree(object):
     ## SLICETREE BUILTIN ##
     #######################
     
-    def __init__(self, iterable:Iterable=[], align_intervals=False, align_steps=False, default_step=DEFAULT_STEP):
+    def __init__(self, iterable:list=[], data:dict={}, align_intervals=False, align_steps=False, default_step=DEFAULT_STEP):
         self.root = None
         self.interval_set = set()
         self.align_intervals, self.align_steps = align_intervals, align_steps
@@ -66,6 +66,10 @@ class SliceTree(object):
 
         for _iter in iterable:
             if isinstance(_iter, tuple): self.insert_tup(_iter)
+        for interval, val in data.items():
+            if isinstance(interval, tuple):
+                assert len(interval)<=3
+                self.__setitem__(slice(*interval), value=val)
     
     def __setitem__(self, _slice:slice, value=None):
         interval = SliceTree.fix_interval(_slice, default_step=self.default_step)

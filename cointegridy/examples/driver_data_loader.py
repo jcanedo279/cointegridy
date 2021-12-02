@@ -43,7 +43,7 @@ def data_loader_driver():
             ((2021,1,29), (2021,2,1), '4h', 'v3'),
             ((2020,11,19), (2020,11,22), '6h', 'v4'),
             ((2020,11,29),  (2020,12,1), '8h', 'v5'),
-            ((2020,12,1), (2020,12,3), '4h', 'v6')
+            ((2020,12,1), (2020,12,3), '4h', 'v6'),
         ]
     }
 
@@ -73,7 +73,6 @@ def data_loader_driver():
         datum, next_datum = data[datum_ind], data[datum_ind+1]
         if datum[0]+Time.parse_interval_flag(querry_interval_flag) != next_datum[0]:
             print(datum, next_datum)
-    
     
     print(tree_loader[sample_symbol].slice_tree)
 

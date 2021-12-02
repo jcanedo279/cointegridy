@@ -6,15 +6,18 @@ from cointegridy.src.classes.Time import Time
 
 
 
-def test_data_loader():
+def test_data_loader_sensibility_depth():
     
     samp_symbol = 'BTCUSDT'
     
+    ## Dismount data
     data_path = f'data/dynammic_data/{samp_symbol}'
     if os.path.exists(data_path):
         shutil.rmtree(data_path)
     
+    ## Dismounted querry -> Mount
     assert_data_load(samp_symbol)
+    ## Mounted querry
     assert_data_load(samp_symbol)
 
 
@@ -53,8 +56,7 @@ def assert_data_load(samp_symbol):
         
         for datum_ind in range(len(data)-1):
             datum, next_datum = data[datum_ind], data[datum_ind+1]
-            if datum[0]+Time.parse_interval_flag(samp_iflag) != next_datum[0]:
-                assert Time(utc_tmsp=datum[0]) == Time(utc_tmsp=next_datum[0])
+            assert datum[0] +Time.parse_interval_flag(samp_iflag) == next_datum[0]
         
         assert data[-1][0] == querry_eT.get_psx_tmsp()
-    
+
