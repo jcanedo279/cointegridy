@@ -42,9 +42,9 @@ import statsmodels.api as sm
 from statsmodels.tsa.stattools import coint
 
 # Custom Imports
-from data_loader import DataLoader
-from coin import Coin
-from ..utils import stats as stat
+from cointegridy.src.classes.data_loader import DataLoader
+from cointegridy.src.classes.coin import Coin
+from cointegridy.src.utils import stats as stat
 
 
 class Basket():

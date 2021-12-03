@@ -52,17 +52,14 @@ setup_config = {
         ## SCRIPTS ##
         'hurst==0.0.5',
         'pycoingecko==2.2.0',
-        ## CLI ##
-        'ipykernel==6.5.1',
-        'ipython==7.29.0',
     ),
     
-    # 'extras_require': { ## TODO:: Requirements for a specific version
-    #     'cli': ( ## pip install -e .[cli]
-    #     #     'ipykernel==6.5.1',
-    #     #     'ipython==7.29.0',
-    #     ),
-    # },
+    'extras_require': { ## TODO:: Requirements for a specific version
+        'cli': ( ## pip install -e .[cli]
+            'ipykernel==6.5.1',
+            'ipython==7.29.0',
+        ),
+    },
     
     'setup_requires': ('pytest-runner', 'flake8',),
     
