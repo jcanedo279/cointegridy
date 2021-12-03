@@ -86,7 +86,7 @@ class SliceTree(object):
         self.root = SliceTree.delete_node(_slice, self.root, None, default_step=self.default_step)
     
     def __getitem__(self, _slice:slice):
-        return self.full_querry(_slice)
+        yield from self.full_querry(_slice)
     
     def __repr__(self):
         if not self.root:

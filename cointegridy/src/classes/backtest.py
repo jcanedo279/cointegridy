@@ -20,7 +20,6 @@ The trader keeps track of which trades to make using a Strategy object. This che
 
 The trader only has one open position at a time but checks if it can/should make any trades at every timestep for now. 
 
-
 '''
 
 
@@ -55,6 +54,7 @@ class Event():
         elif self.direction == 'under' and self.processor.portfolio.loc[prevstamp] > self.target and self.processor.portfolio.loc[tmsp] <= self.target: # THIS SHOULD BE THE PREVIOUS TIMESTAMP
                 return True
         return False
+
 
 class Strategy():
 
