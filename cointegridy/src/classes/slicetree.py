@@ -237,7 +237,7 @@ class SliceTree(object):
         if not running_node or stop<running_node.start: ## If no solution
             yield None, (start,stop,step)
             return
-        if start==stop: ## If point querry --> single solution
+        if start==stop and step==0: ## If point querry --> single solution
             yield running_node.value, (seq_max,seq_max,0)
         if start < running_node.start:
             yield None, (start, running_node.start, step)
@@ -350,15 +350,10 @@ class SliceTree(object):
                 return
             else:
                 return
-        if fix_start and node.start<start:
-            return
+        if fix_start and node.start<start: return ## RETURN: if start is out of bounds
         if node.start<=stop and node.step<=step:
-            if self.align_intervals and ((node.start-start)%step!=0):
-                return
-            if self.align_steps and ((step%node.step)!=0):
-                return
-            if (step%node.step)!=0: ## If the timestep is not divisible
-                return
+            if self.align_intervals and ((node.start-start)%step!=0): return ## RETURN: if our start is misaligned to the querry
+            if self.align_steps and ((step%node.step)!=0): return ## RETURN: if the timestep is not divisible by step
             yield node
     
     def traverse_inorder_interior(self, _slice:slice, root:SliceNode):

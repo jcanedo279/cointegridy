@@ -17,8 +17,8 @@ def test_point_querry():
     my_tree = SliceTree()
     my_tree[1:7:3] = '1_7_3'
     
-    assert next(my_tree[1:1:0], None) == ('1_7_3', (1, 1, 0))
-    assert next(my_tree[7:7:0], None) == ('1_7_3', (7, 7, 0))
+    assert next(my_tree[1:1:0], None) == ('1_7_3',(1,1,0))
+    assert next(my_tree[7:7:0], None) == ('1_7_3',(7,7,0))
     
     assert list(my_tree.full_querry(slice(1,1,0))) == [('1_7_3',(1,1,0))]
     assert list(my_tree.full_querry(slice(7,7,0))) == [('1_7_3',(7,7,0))]
@@ -27,13 +27,13 @@ def test_point_querry():
     
     my_tree[7:9:3] = '7_10_3'
     
-    assert next(my_tree[7], None)  == ('1_7_3', (7, 7, 0))
-    assert next(my_tree[8], None) == ('7_10_3', (8, 8, 0))
+    assert next(my_tree[7], None)  == ('1_7_3',(7,7,0))
+    assert next(my_tree[8], None) == ('7_10_3',(8,8,0))
     
     assert next(my_tree[12], None) == (None, (12,12,0))
     
-    assert list(my_tree.full_querry(-1)) == [(None, (-1,-1,0))]
-    assert list(my_tree.full_querry(3)) == [('1_7_3', (3,3,0))]
+    assert list(my_tree.full_querry(-1)) == [(None,(-1,-1,0))]
+    assert list(my_tree.full_querry(3)) == [('1_7_3',(3,3,0))]
     
 
 def test_edges():
@@ -41,12 +41,11 @@ def test_edges():
     my_tree = SliceTree()
     my_tree[1:7:3], my_tree[7:9:3] = '1_7_3', '7_10_3'
     
-    ## TODO:: Fix this
-    # assert list(my_tree[-2:1:3]) == [SliceNode(1,7,step=3)]
-    # assert list(my_tree[1:3:3]) == [SliceNode(1,7,step=3)]
+    assert list(my_tree[-2:1:3]) == [(None,(-2,1,3))]
+    assert list(my_tree[1:3:3]) == [('1_7_3',(1,4,3))]
     
-    # assert list(my_tree[7:10:3]) == [SliceNode(1,7,step=3), SliceNode(7,10,step=3)]
-    # assert list(my_tree[10:13:3]) == [SliceNode(7,10,step=3)]
+    assert list(my_tree[7:10:3]) == [('1_7_3',(7,7,3)), ('7_10_3',(7,10,3))]
+    assert list(my_tree[10:13:3]) == [(None,(10,13,3))]
 
 
 def test_slicetree_overlap_depth():
