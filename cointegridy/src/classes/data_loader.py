@@ -16,16 +16,16 @@ from cointegridy.src.utils.stats import sharpe_ratio
 TXT_DEL=' '
 CSV_DEL=','
 
-ROOT = os.getcwd().replace('/cointegridy', '/')
+ROOT = '/'.join(os.path.abspath(__file__).split('/')[:-4])
 
 if not os.path.exists('data/'):
     os.mkdir('data/')
 
-DYNAMMIC_DATA_PATH = f'{ROOT}data/dynammic_data'
-HISOTICAL_DATA_PATH = f'{ROOT}data/historical_data'
-DATABASE_PATH = f'{ROOT}data/database.csv'
+DYNAMMIC_DATA_PATH = f'{ROOT}/data/dynammic_data'
+HISOTICAL_DATA_PATH = f'{ROOT}/data/historical_data'
+DATABASE_PATH = f'{ROOT}/data/database.csv'
 METADATA_PATH = f'{HISOTICAL_DATA_PATH}/_metadata.txt'
-SR_PATH = f'{ROOT}data/_sharpe_ratios.txt'
+SR_PATH = f'{ROOT}/data/_sharpe_ratios.txt'
 # DB_PATH = 'data/_cryptos_bnc.txt'
 
 if not os.path.exists(DYNAMMIC_DATA_PATH):
