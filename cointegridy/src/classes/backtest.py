@@ -3,7 +3,7 @@
 from datetime import timedelta
 
 from cointegridy.src.classes.basket import Basket
-from cointegridy.src.exceptions import *
+from cointegridy.src.classes.exceptions import *
 from cointegridy.src.classes.data_loader import DataLoader
 from cointegridy.src.classes import Time
 

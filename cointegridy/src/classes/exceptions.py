@@ -3,16 +3,30 @@ class Error(Exception):
     pass
 
 class invalidLag(Error):
-    pass
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+    
+    def __str__(self) -> str:
+        return "You have defined a lag besides seconds (s), minutes (m), or hours (h)."
+    
 
 class invalidTradeType(Error):
-    pass
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+    
+    def __str__(self) -> str:
+        return 'you have tried to make a trade besides buy, sell, short or cover.'
 
 class invalidDirection(Error):
-    pass
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+    
+    def __str__(self) -> str:
+        return 'You tried to enter an event with a direction besides: \'over\', \'under\''
 
 class invalidOrderID(Error):
-    pass
-
-class notEnoughFunds(Error):
-    pass
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+    
+    def __str__(self) -> str:
+        return "Invalid order ID."

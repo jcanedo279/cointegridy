@@ -13,5 +13,5 @@ def test_1():
     
     print(loc_time, utc_time, ref_utc_time)
     
-    assert abs(utc_time-ref_utc_time) < 0.01
+    assert abs(utc_time-ref_utc_time) < 0.1
 
