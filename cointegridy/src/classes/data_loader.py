@@ -22,18 +22,19 @@ DATA_PATH = f'{ROOT}data/'
 if not os.path.exists(DATA_PATH):
     os.mkdir(DATA_PATH)
 
-DYNAMMIC_DATA_PATH = f'{ROOT}data/dynammic_data'
-HISOTICAL_DATA_PATH = f'{ROOT}data/historical_data'
-DATABASE_PATH = f'{ROOT}data/database.csv'
-METADATA_PATH = f'{HISOTICAL_DATA_PATH}/_metadata.txt'
-SR_PATH = f'{ROOT}data/_sharpe_ratios.txt'
+DYNAMMIC_DATA_PATH = f'{DATA_PATH}dynammic_data'
+HISOTICAL_DATA_PATH = f'{DATA_PATH}historical_data'
+DATABASE_PATH = f'{DATA_PATH}database.csv'
+METADATA_PATH = f'{DATA_PATH}_metadata.txt'
+SR_PATH = f'{DATA_PATH}_sharpe_ratios.txt'
 # DB_PATH = 'data/_cryptos_bnc.txt'
 
 if not os.path.exists(DYNAMMIC_DATA_PATH):
     os.mkdir(DYNAMMIC_DATA_PATH)
 if not os.path.exists(HISOTICAL_DATA_PATH):
     os.mkdir(HISOTICAL_DATA_PATH)
-
+    
+    
 INT_TO_MULTIPLIER = {
     'm': 60,
     'h': 60*60,
@@ -89,7 +90,7 @@ def pull_sharpe_ratios(start_Time=Time.date_to_Time(2021,1,1), end_Time=Time.dat
         bnc_ids = pc_bnc.get_api_ids()
         
     with open(METADATA_PATH, "w") as f_writer:
-        f_writer.write(TXT_DEL.join(bnc_ids))
+        f_writer.writelines([TXT_DEL.join(bnc_ids)])
         
     final_id_ind = -1
     if os.path.exists(SR_PATH):
@@ -272,6 +273,11 @@ class TreeLoader:
         self.pc = Processor('bnc')
         self.id_to_load_ind = {}
         self.loaded_symbol_loaders = []
+        
+        if not os.path.exists(METADATA_PATH):
+            with open(METADATA_PATH, 'w') as f_writer:
+                for symbol in self.pc.get_api_ids():
+                    f_writer.write(symbol+'\n')
 
         for symbol, symb_data in data.items():
             id_loader = TreeSymbolLoader(symbol, self.pc)
@@ -293,8 +299,17 @@ class TreeLoader:
             id_loader = TreeSymbolLoader(_id, self.pc)
         return id_loader
     
-    def get_ids(self):
-        return self.pc.get_api_ids()
+    def pull_ids(self):
+        with open(METADATA_PATH, 'r') as f_reader:
+            for line in f_reader.readlines():
+                _line = line[:-1] if line.endswith('\n') else line
+                yield _line
+    
+    def push_ids(self, new_ids):
+        with open(METADATA_PATH, 'w') as f_writer:
+            for symbol in new_ids:
+                f_writer.write(symbol+'\n')
+
 
 
 
