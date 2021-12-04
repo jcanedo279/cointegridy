@@ -52,7 +52,6 @@ cointegridy
 │  │  │  ├─ Time.py
 │  │  │  ├─ backtest.py
 │  │  │  ├─ basket.py
-│  │  │  ├─ cgprocessor.py
 │  │  │  ├─ coin.py
 │  │  │  ├─ data_loader.py
 │  │  │  ├─ exceptions.py
@@ -61,7 +60,6 @@ cointegridy
 │  │  │  ├─ processor.py
 │  │  │  ├─ slicetree.py
 │  │  │  └─ trader.py
-│  │  ├─ exceptions.py
 │  │  └─ utils
 │  │     ├─ stats.py
 │  │     └─ transforms.py
@@ -71,15 +69,18 @@ cointegridy
 │     ├─ test_data_loader.py
 │     └─ test_slicetree.py
 ├─ data
+│  ├─ .gitkeep
+│  ├─ _metadata.txt
 │  ├─ dynammic_data
+│  │  └─ .gitkeep
 │  └─ historical_data
+│     └─ .gitkeep
 ├─ misc
 │  ├─ img
 │  │  ├─ Cointegridy_logo.ai
 │  │  ├─ Cointegridy_logo.png
 │  │  └─ Cointegridy_logo_small.jpg
 │  └─ requirements.txt
-├─ requirements.txt
 ├─ setup.cfg
 ├─ setup.py
 └─ workspace.code-workspace

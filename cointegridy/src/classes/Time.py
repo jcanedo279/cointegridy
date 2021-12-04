@@ -119,9 +119,9 @@ class Time:
         return _T
     
     
-    #######################
-    ## CONVERT FROM FLAG ##
-    #######################
+    #########################
+    ## INTERACT WITH FLAGS ##
+    #########################
     
     @staticmethod
     def parse_interval_flag(flag):
@@ -134,6 +134,10 @@ class Time:
     @staticmethod
     def valid_steps():
         return VALID_STEPS
+    
+    @staticmethod
+    def int_to_multiplier():
+        return INT_TO_MULTIPLIER
     
     
     #######################

@@ -6,8 +6,9 @@ from typing import Generator
 import pandas as pd
 import numpy as np
 import requests
+import shutil
 
-from cointegridy.src.classes.processor import Processor
+from cointegridy.src.classes.cc_processor import Processor
 from cointegridy.src.classes.Time import Time
 from cointegridy.src.classes.slicetree import SliceTree
 
@@ -16,133 +17,31 @@ from cointegridy.src.utils.stats import sharpe_ratio
 TXT_DEL=' '
 CSV_DEL=','
 
-ROOT = '/'.join(os.path.abspath(__file__).split('/')[:-4])
 
-if not os.path.exists('data/'):
-    os.mkdir('data/')
+ROOT = '/'.join(os.path.dirname(os.path.abspath(__file__)).split('/')[:-3])
+DATA_PATH = f'{ROOT}/data/'
 
-DYNAMMIC_DATA_PATH = f'{ROOT}/data/dynammic_data'
-HISOTICAL_DATA_PATH = f'{ROOT}/data/historical_data'
-DATABASE_PATH = f'{ROOT}/data/database.csv'
-METADATA_PATH = f'{HISOTICAL_DATA_PATH}/_metadata.txt'
-SR_PATH = f'{ROOT}/data/_sharpe_ratios.txt'
-# DB_PATH = 'data/_cryptos_bnc.txt'
+DYNAMMIC_DATA_PATH = f'{DATA_PATH}dynammic_data'
+HISOTICAL_DATA_PATH = f'{DATA_PATH}historical_data'
+DATABASE_PATH = f'{DATA_PATH}database.csv'
 
+METADATA_PATH = f'{DATA_PATH}_metadata.txt'
+SR_PATH = f'{DATA_PATH}_sharpe_ratios.txt'
+
+
+if not os.path.exists(DATA_PATH):
+    os.mkdir(DATA_PATH)
 if not os.path.exists(DYNAMMIC_DATA_PATH):
     os.mkdir(DYNAMMIC_DATA_PATH)
 if not os.path.exists(HISOTICAL_DATA_PATH):
     os.mkdir(HISOTICAL_DATA_PATH)
 
-INT_TO_MULTIPLIER = {
-    'm': 60,
-    'h': 60*60,
-    'd': 60*60*24,
-    'w': 60*60*24*7,
-    'M': 60*60*24*7*4
-}
 
-VALID_FLAGS = ['1m','3m','5m','15m','30m','1h','2h','4h','6h','8h','12h','1d','3d','1w','1M']
+INT_TO_MULTIPLIER = Time.int_to_multiplier()
+VALID_FLAGS, VALID_STEPS = Time.valid_flags(), Time.valid_steps()
 
-STEP_TO_FLAG = {Time.parse_interval_flag(flag):flag for flag in VALID_FLAGS}
-
-
-DEFAULT_STEP = 5*INT_TO_MULTIPLIER['m'] ## The amount to step
-DEFAULT_NUM_STEPS = 499 ## Maximum number of steps
-
-
-def get_ids():
-    with open(METADATA_PATH, "r") as f_reader:
-        return f_reader.read().split(TXT_DEL)
-
-
-def binary_search_tmsp(csv_lines, tmsp):
-    low = 0
-    high = len(csv_lines) - 1
-
-    while low <= high:
-        mid = (high + low) // 2
-        csv_line = csv_lines[mid].split(CSV_DEL)
-        _tmsp = float(csv_line[0])
-
-        if _tmsp < tmsp:
-            low = mid+1
-        elif _tmsp > tmsp:
-            high = mid-1
-        else:
-            return mid
-
-    return min(mid+1, len(csv_lines)-1)
-
-
-##################################
-## UPDATE SHARPE RATIO DATABASE ##
-##################################
-
-def pull_sharpe_ratios(start_Time=Time.date_to_Time(2021,1,1), end_Time=Time.date_to_Time(2021,11,1), interval_flag='5m', bnc_ids=None):
-    """
-        SR_PATH delimetered as [id, id_ind (assumes same bnc_ids), sharpe_ratio]
-    """
-    
-    pc_bnc = Processor('bnc')
-    if not bnc_ids:
-        bnc_ids = pc_bnc.get_api_ids()
-        
-    with open(METADATA_PATH, "w") as f_writer:
-        f_writer.write(TXT_DEL.join(bnc_ids))
-        
-    final_id_ind = -1
-    if os.path.exists(SR_PATH):
-        lines = None
-        with open(SR_PATH, 'r') as f_reader:
-            lines = f_reader.readlines()
-        if lines:
-            final_id_ind = int(lines[-1].split(CSV_DEL))[1]
-    
-    num_ids = len(bnc_ids)
-    with open(SR_PATH, 'w+', newline ='') as f_writer:
-        writer = csv.writer(f_writer)
-        
-        for id_num, id in enumerate(bnc_ids[final_id_ind+1:]):
-            id_num_P = id_num + final_id_ind
-            print(f'FETCHING     ID  [ {id_num_P+1} | {num_ids} ]     PULLING DATA FOR  {id}\t\r', end='')
-            
-            id_response = pc_bnc.id_to_ohlc_seq(id, start_Time, end_Time, interval_flag=interval_flag)
-            open_ser = pd.Series([float(datum['open']) for datum in id_response], name=f'{id}', dtype=np.float64)
-            open_sr = sharpe_ratio(open_ser)
-            writer.writerow([id, id_num_P, open_sr])
-
-
-def get_best_stocks_from_CSV(file_path, _del, num_symbols):
-    """
-        file_path: the path to a CSV file with columns: [id, id_index, id_sharpe_ratio]
-        _del: CSV file delimiter
-        num_symbols: the number of stocks to pick
-    """
-    
-    lines = None
-    with open(file_path, 'r') as f_reader:
-        lines = f_reader.readlines()
-        
-    normed_lines = []
-    for l in lines:
-        l = l[:-1] if l.endswith('\n') else l
-        l_n = l.split(_del)
-        if l_n[0]=='BTCUSDT' or l_n[2]=='nan': continue
-        normed_lines.append((l_n[0], int(l_n[1]), float(l_n[2])))
-    
-    sorted_normed_lines = sorted(normed_lines, key=lambda x: x[2])
-    
-    best_lines = sorted_normed_lines[max(-num_symbols+1, -len(sorted_normed_lines)):]
-    
-    return ['BTCUSDT'] + [line[0] for line in best_lines]
-    
-    
-            
-
-            
-
-
-
+DEFAULT_STEP = 5*INT_TO_MULTIPLIER['m'] ## The default amount to step
+DEFAULT_NUM_STEPS = 499 ## Maximum number of steps (of step size) that a contiguous sequence can hold
 
 
 
@@ -155,15 +54,18 @@ class TreeSymbolLoader:
         Acts as a wrapper to grab data timestamp data as a class item
     """
     
-    def __init__(self, _id, processor):
+    def __init__(self, symbol, denom, processor):
         self.pc = processor
-        self.id = _id.upper()
-        self.data_dir = f'{DYNAMMIC_DATA_PATH}/{_id.upper()}/'
+        self.symbol, self.denom = symbol.upper(), denom.upper()
+        self.symbol_dir = f'{DYNAMMIC_DATA_PATH}/{self.symbol}'
+        self.data_dir = f'{self.symbol_dir}/{self.denom}/'
         ## A mapping: slice [start:stop:step] -> filename
         self.slice_tree = SliceTree()
 
-        ## If id does not have a data directory, create it
+        ## If symbol does not have a data directory, create it
         if not os.path.exists(self.data_dir):
+            if not os.path.exists(self.symbol_dir):
+                os.mkdir(self.symbol_dir)
             os.mkdir(self.data_dir)
         
         for dirname in os.listdir(self.data_dir):
@@ -235,19 +137,17 @@ class TreeSymbolLoader:
                 _filename = f'{c_rep}/{cache_start}_{cache_start+c_step*DEFAULT_NUM_STEPS}_{c_step}.csv'
                 with open(self.data_dir+_filename, 'w') as f_writer:
                     writer = csv.writer(f_writer)
-                    for datum in self.pc.id_to_ohlc_seq(self.id, Time(utc_tmsp=float(cache_start)), Time(utc_tmsp=float(cache_start+c_step*DEFAULT_NUM_STEPS)), interval_flag=c_iflag):
-                        writer.writerow([float(datum['open_tmsp']), float(datum['open'])])
+                    for datum in self.pc.symbol_to_ohlc_seq(self.symbol, Time(utc_tmsp=float(cache_start)), Time(utc_tmsp=float(cache_start+c_step*DEFAULT_NUM_STEPS)), interval_flag=c_iflag, denom=self.denom):
+                        writer.writerow(datum)
                 cache_start += c_step*DEFAULT_NUM_STEPS
             if cache_start < c_stop:
                 _filename = f'{c_rep}/{cache_start}_{c_stop}_{c_step}.csv'
                 with open(self.data_dir+_filename, 'w') as f_writer:
                     writer = csv.writer(f_writer)
-                    for datum in self.pc.id_to_ohlc_seq(self.id, Time(utc_tmsp=float(cache_start)), Time(utc_tmsp=c_stop), interval_flag=c_iflag):
-                        writer.writerow([float(datum['open_tmsp']), float(datum['open'])])
+                    for datum in self.pc.symbol_to_ohlc_seq(self.symbol, Time(utc_tmsp=float(cache_start)), Time(utc_tmsp=c_stop), interval_flag=c_iflag, denom=self.denom):
+                        writer.writerow(datum)
             
             self.slice_tree[c_start:c_stop:c_step] = c_rep
-    
-    
     
     def pull_seq_from_loaded(self, filename, running_max):
         with open(self.data_dir+filename, 'r') as f_reader:
@@ -257,162 +157,72 @@ class TreeSymbolLoader:
                 if tmsp >= running_max:
                     yield (tmsp, float(line[1])), max(tmsp, running_max)
     
-    
     def pull_seq_from_bnc(self, start_tmsp, stop_tmsp, running_max, interval_flag='5m'): ## ONLY GRAB WHAT YOU NEED TO HERE
-        for datum in self.pc.id_to_ohlc_seq(self.id, Time(utc_tmsp=max(start_tmsp,running_max)), Time(utc_tmsp=stop_tmsp), interval_flag=interval_flag):
-            tmsp, value = float(datum['open_tmsp']), float(datum['open'])
+        for datum in self.pc.symbol_to_ohlc_seq(self.symbol, Time(utc_tmsp=max(start_tmsp,running_max)), Time(utc_tmsp=stop_tmsp), interval_flag=interval_flag, denom=self.denom):
+            ### datum = [tmsp, open, high, low, close, volume]
+            tmsp = float(datum[0])
             if tmsp > running_max:
-                yield (tmsp, value), max(tmsp, running_max)
-        
+                yield [float(item) for item in datum], max(tmsp, running_max)
+
+
 
 class TreeLoader:
     
     def __init__(self, data={}):
-        self.pc = Processor('bnc')
-        self.id_to_load_ind = {}
-        self.loaded_symbol_loaders = []
+        self.pc = Processor()
+        self.asset_to_load_ind, self.loaded_loaders = {}, []
+        
+        if not os.path.exists(METADATA_PATH):
+            with open(METADATA_PATH, 'w') as f_writer:
+                for symbol in self.pc.get_api_symbols():
+                    f_writer.write(symbol+'\n')
 
-        for symbol, symb_data in data.items():
-            id_loader = TreeSymbolLoader(symbol, self.pc)
-            self.id_to_load_ind[symbol] = len(self.loaded_symbol_loaders)
+        for (symbol,denom), symb_data in data.items():
+            loader = TreeSymbolLoader(symbol, denom, self.pc)
+            self.asset_to_load_ind[(symbol,denom)] = len(self.loaded_loaders)
             for start_date, end_date, step_flag, value in symb_data:
                 start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
-                for _ in id_loader[start_Time:end_Time:Time.parse_interval_flag(step_flag)]:
+                for _ in loader[start_Time:end_Time:Time.parse_interval_flag(step_flag)]:
                     pass
-            self.loaded_symbol_loaders.append(id_loader)
+            self.loaded_loaders.append(loader)
     
-    def __getitem__(self, _id: str ) -> TreeSymbolLoader:
-        assert isinstance(_id,str)
-        id_loader = None        
+    
+    def __getitem__(self, asset) -> TreeSymbolLoader:
+        assert isinstance(asset,str) or isinstance(asset,slice)
+        symbol,denom = asset.split('/') if isinstance(asset,str) else asset.start,asset.stop
         
-        if _id in self.id_to_load_ind: ## If we have seen id before
-            loader_ind = self.id_to_load_ind[_id]
-            id_loader = self.loaded_symbol_loaders[loader_ind]
+        loader = None        
+        
+        if (symbol,denom) in self.asset_to_load_ind: ## If we have seen symbol before
+            loader_ind = self.asset_to_load_ind[(symbol,denom)]
+            loader = self.loaded_loaders[loader_ind]
         else: ## If this is a new symbol
-            id_loader = TreeSymbolLoader(_id, self.pc)
-        return id_loader
+            loader = TreeSymbolLoader(symbol, denom, self.pc)
+        return loader
+
     
-    def get_ids(self):
-        return self.pc.get_api_ids()
-
-
-
-
-
-
-
-
-
-
-########################
-## STATIC DATA LOADER ##
-########################
-
-class SymbolLoader:
-    """
-        Acts as a wrapper to grab data timestamp data as a class item
-    """
-    
-    def __init__(self, _id):
-        self.id = _id
-        self.data_path = f'data/historical_data/{_id.upper()}.csv'
-    
-    
-    def __getitem__(self, _slice: slice) -> Generator:
-        assert isinstance(_slice, slice)
-        start, stop, interval = _slice.start, _slice.stop, _slice.step
+    def clear_loaded(self):
+        self.asset_to_load_ind, self.loaded_loaders = {}, []
         
-        if isinstance(start, Time):
-            start = start.get_psx_tmsp()
-        if isinstance(stop, Time):
-            stop = stop.get_psx_tmsp()
-        
-        if os.path.exists(self.data_path):
-            
-            lines = None
-            with open(self.data_path, 'r') as f_reader:
-                lines = f_reader.readlines()
-            
-            if lines:
-                start_ind, stop_ind = binary_search_tmsp(lines, start), binary_search_tmsp(lines, stop)
-                ## TODO: ADD STEP SIZE TO DENOTE INTERVAL SOMEHOW ????
-                for line in lines[start_ind:stop_ind]:
-                    split = line.split(CSV_DEL)
-                    yield (float(split[0]), float(split[1]))
-            else:
-                print(f'No data located inside {self.data_path}')  
-        else:
-            print(f'No data file {self.data_path} located')
-        
+        INVALID_FILENAMES = {'.gitkeep'}
+        for filename in os.listdir(DYNAMMIC_DATA_PATH):
+            if filename in INVALID_FILENAMES: continue
+            shutil.rmtree(f'{DYNAMMIC_DATA_PATH}/{filename}')
     
-
-class DataLoader:
-    
-    def __init__(self):
-        pass
-    
-    
-    def __getitem__(self, _id: str ) -> SymbolLoader:
-        assert isinstance(_id,str)
-        
-        id_loader = SymbolLoader(_id)
-        return id_loader
-    
-    def get_ids(self):
-        return get_ids()
     
     @staticmethod
-    def pull_data(start_Time=Time.date_to_Time(2021,1,1), end_Time=Time.date_to_Time(2021,11,1), interval_flag='1d', bnc_ids=None):
-        """
-            1 day ~ 289 5 minute intervals   -->   1 year ~ 105,485 lines
-            
-            20 lines ~ 6.3 MB   -->   105,485 lines ~ 34 GB
-            
-            1 day ~ 5 minutes to compute   -->   11 months ~ 27.5 hrs to compute
-        """
-        
-        interval = Time.parse_interval_flag(interval_flag)
-        
-        pc_bnc = Processor('bnc')
-        if not bnc_ids:
-            bnc_ids = pc_bnc.get_api_ids()
-        
-        with open(METADATA_PATH, "w") as f_writer:
-            f_writer.write(TXT_DEL.join(bnc_ids))
+    def pull_symbols():
+        with open(METADATA_PATH, 'r') as f_reader:
+            for line in f_reader.readlines():
+                _line = line[:-1] if line.endswith('\n') else line
+                yield _line
+    
+    @staticmethod
+    def push_symbols(new_symbols):
+        with open(METADATA_PATH, 'w') as f_writer:
+            for symbol in new_symbols:
+                f_writer.write(symbol+'\n')
 
-        num_ids = len(bnc_ids)
-        
-        STEPS = 499
-            
-        for id_num, id in enumerate(bnc_ids):
-            id_path = f'{HISOTICAL_DATA_PATH}/{id.upper()}.csv'
-            
-            with open(id_path, 'w+', newline ='') as f_writer:
-                writer = csv.writer(f_writer)
-                
-                start_Time_P = start_Time
-                if os.path.exists(id_path):
-                    lines = None
-                    with open(id_path, 'r') as f_reader:
-                        lines = f_reader.readlines()
-                    if lines:
-                        final_tmsp = float(lines[-1].split(CSV_DEL)[0])
-                        start_Time_P = Time(utc_tmsp=final_tmsp)
-            
-                window_interval = STEPS * interval
-                for iter_Time in Time.iter_Time(start_Time_P, end_Time, sec_interval=window_interval, conv=True):
-                    print(f'PROCESSING     ID  {id}  [ {id_num+1} | {num_ids} ]     DAY  [ {iter_Time} | {end_Time} ]\t\r', end='')
-                    
-                    cutoff_Time = iter_Time.add_seconds_from_Time(iter_Time, window_interval)
-                    id_response = pc_bnc.id_to_ohlc_seq(id, iter_Time, cutoff_Time, interval_flag=interval_flag)
-                    
-                    writer.writerows([[d['open_tmsp'], d['open']] for d in id_response])
 
-    
-    
-    
-    
-    
-    
-    
+
     

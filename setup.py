@@ -31,8 +31,6 @@ setup_config = {
     
     'cmdclass': {'egg_info': egg_info_parse}, ## Include LICENSE.txt into package
     
-    # 'packages': 'setup.my_test_suite', ## TODO:: Apparently dangerous, look into endpoints
-    
     ## Barebone requirements for package contents
     'install_requires': (
         ## CLASSES ##
@@ -51,15 +49,17 @@ setup_config = {
         'pytz==2021.3',
         ## SCRIPTS ##
         'hurst==0.0.5',
-        'pycoingecko==2.2.0',
+        ## CLI ##
+        'ipykernel==6.5.1',
+        'ipython==7.29.0',
     ),
     
-    'extras_require': { ## TODO:: Requirements for a specific version
-        'cli': ( ## pip install -e .[cli]
-            'ipykernel==6.5.1',
-            'ipython==7.29.0',
-        ),
-    },
+    # 'extras_require': { ## TODO:: Requirements for a specific version
+    #     'cli': ( ## pip install -e .[cli]
+    #         'ipykernel==6.5.1',
+    #         'ipython==7.29.0',
+    #     ),
+    # },
     
     'setup_requires': ('pytest-runner', 'flake8',),
     
@@ -68,7 +68,7 @@ setup_config = {
     'tests_require': ('pytest',),
     
     'classifiers': [
-        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.7-3.9",
         "License :: MIT License",
         "Operating System :: LINUX + OS",
     ],

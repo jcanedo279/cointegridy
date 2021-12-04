@@ -1,6 +1,6 @@
 
 from cointegridy.src.classes.Time import Time
-from cointegridy.src.classes.data_loader import DataLoader, TreeLoader
+from cointegridy.src.classes.data_loader import TreeLoader
 
 
 def data_loader_driver():
@@ -34,10 +34,10 @@ def data_loader_driver():
     ## PULL DYNAMMIC HISTORICAL DATA ##
     ###################################
     
-    sample_symbol = 'BTCUSDT'
+    sample_symbol, sample_denom = 'BTC', 'USD'
 
     data = {
-        'BTCUSDT': [
+        ('BTC','USD'): [
             ((2021,1,28), (2021,2,1), '6h', 'v1'),
             ((2020,12,16), (2020,12,23), '12h', 'v2'),
             ((2021,1,29), (2021,2,1), '4h', 'v3'),
@@ -47,9 +47,9 @@ def data_loader_driver():
         ]
     }
 
-    tree_loader = TreeLoader(data=data)
+    tree_loader = TreeLoader()
 
-    print(tree_loader[sample_symbol].slice_tree)
+    print(tree_loader[sample_symbol:sample_denom].slice_tree)
 
 
 
@@ -57,16 +57,17 @@ def data_loader_driver():
     
     ## QUERRYING
     querry_interval_flag = '6h'
-    querry_sT, querry_eT = Time.date_to_Time(*(2021,1,1)), Time.date_to_Time(*(2021,11,1))
+    querry_sT, querry_eT = Time.date_to_Time(*(2021,1,1)), Time.date_to_Time(*(2021,1,5))
     
-    data = list( tree_loader[sample_symbol][querry_sT:querry_eT:Time.parse_interval_flag(querry_interval_flag)] )
+
+    data = list( tree_loader[sample_symbol:sample_denom][querry_sT:querry_eT:Time.parse_interval_flag(querry_interval_flag)] )
     
     ## VERIFY QUERRY
     # data = list(data)
     print('QUERRYING: ', querry_sT.get_psx_tmsp(), querry_eT.get_psx_tmsp())
-    
-    for datum in data:
-        print(datum)
+    # print(len(data))
+    # for datum in data:
+    #     print(datum)
     print('-'*20)
     
     for datum_ind in range(len(data)-1):
@@ -74,7 +75,7 @@ def data_loader_driver():
         if datum[0]+Time.parse_interval_flag(querry_interval_flag) != next_datum[0]:
             print(datum, next_datum)
     
-    print(tree_loader[sample_symbol].slice_tree)
+    print(tree_loader[sample_symbol:sample_denom].slice_tree)
 
 
 if __name__ == '__main__':

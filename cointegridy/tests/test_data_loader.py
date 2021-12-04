@@ -8,7 +8,7 @@ from cointegridy.src.classes.Time import Time
 
 def test_data_loader_sensibility_depth():
     
-    samp_symbol = 'BTCUSDT'
+    samp_symbol, samp_denom = 'BTC', 'USD'
     
     ## Dismount data
     data_path = f'data/dynammic_data/{samp_symbol}'
@@ -16,15 +16,15 @@ def test_data_loader_sensibility_depth():
         shutil.rmtree(data_path)
     
     ## Dismounted querry -> Mount
-    assert_data_load(samp_symbol)
+    assert_data_load(samp_symbol, samp_denom)
     ## Mounted querry
-    assert_data_load(samp_symbol)
+    assert_data_load(samp_symbol, samp_denom)
 
 
-def assert_data_load(samp_symbol):
+def assert_data_load(samp_symbol, samp_denom):
 
     samp_data = {
-        samp_symbol: [
+        (samp_symbol,samp_denom): [
             ((2021,1,28), (2021,2,1), '6h', 'v1'),
             ((2020,12,16), (2020,12,23), '12h', 'v2'),
             ((2021,1,29), (2021,2,1), '4h', 'v3'),
@@ -49,14 +49,14 @@ def assert_data_load(samp_symbol):
         ## QUERRYING
         querry_sT, querry_eT = Time.date_to_Time(*samp_sd), Time.date_to_Time(*samp_ed)
     
-        data = list( tree_loader[samp_symbol][querry_sT:querry_eT:Time.parse_interval_flag(samp_iflag)] )
+        data = list( tree_loader[samp_symbol:samp_denom][querry_sT:querry_eT:Time.parse_interval_flag(samp_iflag)] )
         
         ## VERIFY QUERRY
         assert data[0][0] == querry_sT.get_psx_tmsp()
         
         for datum_ind in range(len(data)-1):
             datum, next_datum = data[datum_ind], data[datum_ind+1]
-            assert datum[0] +Time.parse_interval_flag(samp_iflag) == next_datum[0]
+            assert datum[0]+Time.parse_interval_flag(samp_iflag) == next_datum[0]
         
         assert data[-1][0] == querry_eT.get_psx_tmsp()
 
