@@ -71,15 +71,17 @@ cointegridy
 │     ├─ test_data_loader.py
 │     └─ test_slicetree.py
 ├─ data
+│  ├─ _metadata.txt
 │  ├─ dynammic_data
+│  │  └─ .gitkeep
 │  └─ historical_data
+│     └─ .gitkeep
 ├─ misc
 │  ├─ img
 │  │  ├─ Cointegridy_logo.ai
 │  │  ├─ Cointegridy_logo.png
 │  │  └─ Cointegridy_logo_small.jpg
 │  └─ requirements.txt
-├─ requirements.txt
 ├─ setup.cfg
 ├─ setup.py
 └─ workspace.code-workspace

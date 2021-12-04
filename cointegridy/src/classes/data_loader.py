@@ -299,13 +299,15 @@ class TreeLoader:
             id_loader = TreeSymbolLoader(_id, self.pc)
         return id_loader
     
-    def pull_ids(self):
+    @staticmethod
+    def pull_ids():
         with open(METADATA_PATH, 'r') as f_reader:
             for line in f_reader.readlines():
                 _line = line[:-1] if line.endswith('\n') else line
                 yield _line
     
-    def push_ids(self, new_ids):
+    @staticmethod
+    def push_ids(new_ids):
         with open(METADATA_PATH, 'w') as f_writer:
             for symbol in new_ids:
                 f_writer.write(symbol+'\n')
