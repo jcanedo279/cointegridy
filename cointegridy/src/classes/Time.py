@@ -45,7 +45,7 @@ class Time:
             The time we use here is Possix time (measured as of 00:00:00 UTC on 1 January 1970)
         Timezone:
             Multiple times can be Possix reference times and be different times due to timezones, we
-            standardize this by using UTC as the standard timeone
+            standardize this by using UTC as the standard timezone
         Scale:
             The standard LINUX timescale is seconds, but Binance uses ms so we need to convert
     """
