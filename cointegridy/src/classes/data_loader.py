@@ -16,7 +16,10 @@ from cointegridy.src.utils.stats import sharpe_ratio
 TXT_DEL=' '
 CSV_DEL=','
 
-ROOT = ''
+ROOT = os.getcwd().replace('/cointegridy', '/')
+
+if not os.path.exists('data/'):
+    os.mkdir('data/')
 
 DYNAMMIC_DATA_PATH = f'{ROOT}data/dynammic_data'
 HISOTICAL_DATA_PATH = f'{ROOT}data/historical_data'
@@ -25,6 +28,10 @@ METADATA_PATH = f'{HISOTICAL_DATA_PATH}/_metadata.txt'
 SR_PATH = f'{ROOT}data/_sharpe_ratios.txt'
 # DB_PATH = 'data/_cryptos_bnc.txt'
 
+if not os.path.exists(DYNAMMIC_DATA_PATH):
+    os.mkdir(DYNAMMIC_DATA_PATH)
+if not os.path.exists(HISOTICAL_DATA_PATH):
+    os.mkdir(HISOTICAL_DATA_PATH)
 
 INT_TO_MULTIPLIER = {
     'm': 60,
@@ -401,4 +408,11 @@ class DataLoader:
                     
                     writer.writerows([[d['open_tmsp'], d['open']] for d in id_response])
 
-
+    
+    
+    
+    
+    
+    
+    
+    

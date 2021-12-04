@@ -42,24 +42,40 @@ import statsmodels.api as sm
 from statsmodels.tsa.stattools import coint
 
 # Custom Imports
-from cointegridy.src.classes.processor import Processor
-import cointegridy.src.utils.stats as stats
+from cointegridy.src.classes.data_loader import DataLoader
+from cointegridy.src.classes.coin import Coin
+from cointegridy.src.utils import stats as stat
 
 
 class Basket():
 
-    def __init__(self, coins, target, processor, method='linear_regression'):
+    def __init__(self, coins, target, dataloader, method='linear_regression'):
 
         self.coef_ = []
         self.coins_ = coins
         self.method_ = method
         self.target_ = target
-        self.processor_ = processor
+        self.dataloader_ = dataloader
         self.is_coint_ = None
         self.intercept_ = None
         self.upper_band_ = None
         self.lower_band_ = None
         self.std_ = None
+        self.prices_ = None
+    
+    def get_prices(self,start,end):
+        '''
+        Takes in start and end Time objects.
+
+        Returns a pandas dataframe indexed by timestamps
+        '''
+        df = pd.DataFrame()
+        
+        for coin in self.coins_:
+            df[coin.name_] = self.dataloader_[coin.name_.upper()  + 'USDT'][start:end]
+
+        self.prices_ = df
+
 
     def fit(self, prices):
         """
@@ -89,6 +105,8 @@ class Basket():
         print("Fitting", self.method_, "...")
         print("Found coefficients for basket: ", [1] + list(self.coef_))
         print("At intercept: ", self.intercept_)
+        
+        self.prices_['spread'] = self.prices_.dot(pd.Series(self.coef_))
         
         return self.coef_, self.intercept_
         

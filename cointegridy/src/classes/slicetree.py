@@ -58,7 +58,7 @@ class SliceTree(object):
     ## SLICETREE BUILTIN ##
     #######################
     
-    def __init__(self, iterable:Iterable=[], align_intervals=False, align_steps=False, default_step=DEFAULT_STEP):
+    def __init__(self, iterable:list=[], data:dict={}, align_intervals=False, align_steps=False, default_step=DEFAULT_STEP):
         self.root = None
         self.interval_set = set()
         self.align_intervals, self.align_steps = align_intervals, align_steps
@@ -66,6 +66,10 @@ class SliceTree(object):
 
         for _iter in iterable:
             if isinstance(_iter, tuple): self.insert_tup(_iter)
+        for interval, val in data.items():
+            if isinstance(interval, tuple):
+                assert len(interval)<=3
+                self.__setitem__(slice(*interval), value=val)
     
     def __setitem__(self, _slice:slice, value=None):
         interval = SliceTree.fix_interval(_slice, default_step=self.default_step)
@@ -82,7 +86,7 @@ class SliceTree(object):
         self.root = SliceTree.delete_node(_slice, self.root, None, default_step=self.default_step)
     
     def __getitem__(self, _slice:slice):
-        return self.full_querry(_slice)
+        yield from self.full_querry(_slice)
     
     def __repr__(self):
         if not self.root:
@@ -233,7 +237,7 @@ class SliceTree(object):
         if not running_node or stop<running_node.start: ## If no solution
             yield None, (start,stop,step)
             return
-        if start==stop: ## If point querry --> single solution
+        if start==stop and step==0: ## If point querry --> single solution
             yield running_node.value, (seq_max,seq_max,0)
         if start < running_node.start:
             yield None, (start, running_node.start, step)
@@ -346,15 +350,10 @@ class SliceTree(object):
                 return
             else:
                 return
-        if fix_start and node.start<start:
-            return
+        if fix_start and node.start<start: return ## RETURN: if start is out of bounds
         if node.start<=stop and node.step<=step:
-            if self.align_intervals and ((node.start-start)%step!=0):
-                return
-            if self.align_steps and ((step%node.step)!=0):
-                return
-            if (step%node.step)!=0: ## If the timestep is not divisible
-                return
+            if self.align_intervals and ((node.start-start)%step!=0): return ## RETURN: if our start is misaligned to the querry
+            if self.align_steps and ((step%node.step)!=0): return ## RETURN: if the timestep is not divisible by step
             yield node
     
     def traverse_inorder_interior(self, _slice:slice, root:SliceNode):

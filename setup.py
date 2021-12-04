@@ -33,20 +33,30 @@ setup_config = {
     
     # 'packages': 'setup.my_test_suite', ## TODO:: Apparently dangerous, look into endpoints
     
-    'install_requires': ( ## Barebone requirements for package contents
-        'treelib==1.6.1',
-        'pytz==2021.3',
-        'numpy==1.21.3',
+    ## Barebone requirements for package contents
+    'install_requires': (
+        ## CLASSES ##
+        ## backtest
         'pandas==1.3.4',
-        'matplotlib==3.4.3',
-        'urllib3==1.26.7',
-        'python-dotenv==0.19.1',
+        'numpy==1.21.4',
+        'sklearn==0.0',
+        'statsmodels==0.13.1',
+        ## processor
         'requests==2.26.0',
+        'matplotlib==3.5.0',
+        'python-dotenv==0.19.2',
+        # slicetree
+        'treelib==1.6.1',
+        ## Time
+        'pytz==2021.3',
+        ## SCRIPTS ##
+        'hurst==0.0.5',
+        'pycoingecko==2.2.0',
     ),
     
     'extras_require': { ## TODO:: Requirements for a specific version
-        'interactive': ( ## pip install -e .[interactive]
-            'ipykernel==6.5.0',
+        'cli': ( ## pip install -e .[cli]
+            'ipykernel==6.5.1',
             'ipython==7.29.0',
         ),
     },
