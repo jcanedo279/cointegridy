@@ -16,10 +16,11 @@ from cointegridy.src.utils.stats import sharpe_ratio
 TXT_DEL=' '
 CSV_DEL=','
 
-ROOT = os.getcwd().replace('/cointegridy', '/')
+ROOT = os.path.dirname(os.path.abspath(__file__)).replace('/cointegridy/src/classes', '/')
+DATA_PATH = f'{ROOT}data/'
 
-if not os.path.exists('data/'):
-    os.mkdir('data/')
+if not os.path.exists(DATA_PATH):
+    os.mkdir(DATA_PATH)
 
 DYNAMMIC_DATA_PATH = f'{ROOT}data/dynammic_data'
 HISOTICAL_DATA_PATH = f'{ROOT}data/historical_data'
