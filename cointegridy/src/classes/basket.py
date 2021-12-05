@@ -42,7 +42,7 @@ import statsmodels.api as sm
 from statsmodels.tsa.stattools import coint
 
 # Custom Imports
-from cointegridy.src.classes.data_loader import DataLoader
+from cointegridy.src.classes.data_loader import TreeLoader
 from cointegridy.src.classes.coin import Coin
 from cointegridy.src.utils import stats as stat
 
@@ -72,7 +72,7 @@ class Basket():
         df = pd.DataFrame()
         
         for coin in self.coins_:
-            df[coin.name_] = self.dataloader_[coin.name_.upper()  + 'USDT'][start:end]
+            df[coin.name_] = self.dataloader_[coin.name_.upper():'USD'][start:end]
 
         self.prices_ = df
 
