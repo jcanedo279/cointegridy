@@ -12,7 +12,7 @@ Cointegridy Package Usage
 
  * **package installation:** `pip install -e .`
    
-   Running this command from the root of the workspace will install the cointegridy package. The flag `-e` makes sure the cointegridy package is editable so we don't hae to re-install the package.
+   Running this command from the root of the workspace will install the cointegridy package. The flag `-e` makes sure the cointegridy package is editable so we don't have to re-install the package.
 
 * **package testing:** `python setup.py test [--addopts <pathFromCWDToTestFileName>.py::<test_method>]`
 

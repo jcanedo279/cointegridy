@@ -2,17 +2,20 @@ import os
 import sys
 import subprocess
 
+SETUPTOOLS_VERSION = 'setuptools-scm==6.3.2'
+TERMCOLOR_VERSION = 'termcolor==1.1.0'
+
 try:
     import setuptools
 except:
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'setuptools-scm==6.3.2'])
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', SETUPTOOLS_VERSION])
 from setuptools import setup, find_packages
 from setuptools.command.egg_info import egg_info
 
 try:
     import termcolor
 except:
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'termcolor==1.1.0'])
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', TERMCOLOR_VERSION])
 from termcolor import cprint
 
 
@@ -37,7 +40,7 @@ class egg_info_parse(egg_info):
         egg_info.run(self)
 
 def parse_setup_requirements():
-    req_path = f'{ROOT}misc/requirements.txt'
+    req_path = f'{ROOT}env/requirements.txt'
     reqs = []
     with open(req_path, 'r') as f_reader:
         for line in f_reader.readlines():

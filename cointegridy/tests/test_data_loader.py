@@ -58,4 +58,30 @@ def assert_data_load(samp_symbol, samp_denom):
         
         assert data[-1][0] == querry_eT.get_psx_tmsp()
 
+def test_metadata():
+    
+    ## TEST 1 ##
+    
+    metadata = TreeLoader.pull_symbols_from_metadata(active=False)
+    
+    symbol, denom = 'BTC', 'USD'
+    assert symbol in metadata
+    denoms = metadata[symbol]
+    assert denom in denoms
+    
+    
+    ## TEST 2 ##
+    
+    TreeLoader.push_symbols_to_metadata([symbol])
+    
+    active_metadata = TreeLoader.pull_symbols_from_metadata()
+    
+    symbol_other = 'ETC'
+    
+    assert symbol_other in metadata
+    assert symbol_other not in active_metadata
+    
+    assert symbol in metadata
+    denoms = metadata[symbol]
+    assert denom in denoms
 

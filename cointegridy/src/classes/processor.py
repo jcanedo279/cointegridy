@@ -2,6 +2,7 @@
 Functions that get data from FTX.
 """
 import os
+from typing import Generator
 
 import ccxt
 
@@ -24,7 +25,7 @@ class Processor:
             'enableRateLimit': True,
         })
     
-    def symbol_to_ohlc_seq(self, symbol, start_Time, end_Time, denom='USD', interval_flag="6h"):
+    def symbol_to_ohlc_seq(self, symbol, start_Time, end_Time, denom='USD', interval_flag="6h") -> Generator:
         """
             exchange: exchange object, (e.g. ccxt.ftx())
             symbol: symbol for the product (e.g. BTC/USD)
@@ -46,10 +47,10 @@ class Processor:
             yield [int(float(datum[0])/1000)] + datum[1:]
     
     
-    def get_api_tickers(self):
+    def get_api_tickers(self) -> list:
         return self.exchange.fetch_tickers().keys()
     
-    def get_api_symbols_to_denoms(self):
+    def get_api_symbols_to_denoms(self) -> dict:
         symbols_to_denoms = {}
         for ticker in self.get_api_tickers():
             symbol,denom = ticker.split('/')
