@@ -42,6 +42,7 @@ cointegridy
 │  │     └─ processing.py
 │  ├─ examples
 │  │  ├─ driver_data_loader.py
+│  │  ├─ driver_processor.py
 │  │  └─ driver_slicetree.py
 │  ├─ scripts
 │  │  ├─ cointegration.ipynb
@@ -71,10 +72,8 @@ cointegridy
 ├─ data
 │  ├─ .gitkeep
 │  ├─ _metadata.txt
-│  ├─ dynammic_data
-│  │  └─ .gitkeep
-│  └─ historical_data
-│     └─ .gitkeep
+│  └─ dynammic_data
+│     └── .gitkeep
 ├─ misc
 │  ├─ img
 │  │  ├─ Cointegridy_logo.ai

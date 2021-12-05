@@ -1,6 +1,27 @@
+import os
+import sys
+import subprocess
+
+try:
+    import setuptools
+except:
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'setuptools-scm==6.3.2'])
 from setuptools import setup, find_packages
 from setuptools.command.egg_info import egg_info
 
+try:
+    import termcolor
+except:
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'termcolor==1.1.0'])
+from termcolor import cprint
+
+
+
+ROOT = f'{os.path.dirname(os.path.abspath(__file__))}/'
+
+if not os.path.exists(f'{ROOT}venv/') or (not 'venv' in sys.executable):
+    cprint('Please create a venv and activate it before running this file', 'red')
+    sys.exit()
 
 
 class egg_info_parse(egg_info):
@@ -15,6 +36,18 @@ class egg_info_parse(egg_info):
 
         egg_info.run(self)
 
+def parse_setup_requirements():
+    req_path = f'{ROOT}misc/requirements.txt'
+    reqs = []
+    with open(req_path, 'r') as f_reader:
+        for line in f_reader.readlines():
+            if not '==' in line: continue
+            _line = line[:-1] if line.endswith('\n') else line
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install', _line])
+            reqs.append(_line)
+    return reqs
+
+    
 
 
 
@@ -32,34 +65,7 @@ setup_config = {
     'cmdclass': {'egg_info': egg_info_parse}, ## Include LICENSE.txt into package
     
     ## Barebone requirements for package contents
-    'install_requires': (
-        ## CLASSES ##
-        ## backtest
-        'pandas==1.3.4',
-        'numpy==1.21.4',
-        'sklearn==0.0',
-        'statsmodels==0.13.1',
-        ## processor
-        'requests==2.26.0',
-        'matplotlib==3.5.0',
-        'python-dotenv==0.19.2',
-        # slicetree
-        'treelib==1.6.1',
-        ## Time
-        'pytz==2021.3',
-        ## SCRIPTS ##
-        'hurst==0.0.5',
-        ## CLI ##
-        'ipykernel==6.5.1',
-        'ipython==7.29.0',
-    ),
-    
-    # 'extras_require': { ## TODO:: Requirements for a specific version
-    #     'cli': ( ## pip install -e .[cli]
-    #         'ipykernel==6.5.1',
-    #         'ipython==7.29.0',
-    #     ),
-    # },
+    'install_requires': parse_setup_requirements(),
     
     'setup_requires': ('pytest-runner', 'flake8',),
     

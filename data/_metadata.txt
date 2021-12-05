@@ -1,66 +1,66 @@
-LINK
-WAVES
-ETH
-MANA
-USDT
-NEO
-USDC
-ONE
-STORJ
-CTSI
-ICX
-UNI
-XRP
-ANKR
-MATIC
-ATOM
-ZIL
-BUSD
-VET
-NANO
-EOS
-COMP
-RVN
-KNC
-ONT
-SOL
-ALGO
-EGLD
-DOGE
-BNB
-HNT
-BTC
-REP
-ZEC
-DAI
-OXT
-ZRX
-FIL
-SUSHI
-LTC
-ETC
-DASH
-XTZ
-IOTA
-MKR
-BCH
-AXS
-ZEN
-AMP
-AVAX
-YFI
-ADA
-CRV
-SHIB
-QTUM
-GRT
-OMG
-DOT
-VTHO
-AAVE
-HBAR
-BAT
-PAXG
-ENJ
-BAND
-XLM
+BTC&['USD', 'D', 'T', 'B', 'S', 'U', 'C']
+ETH&['USD', 'D', 'T', 'B', 'S', 'U', 'C']
+XRP&['USD', 'D', 'T', 'B', 'S', 'U', 'C']
+BCH&['USD', 'D', 'T', 'B', 'S', 'U', 'C']
+LTC&['USD', 'D', 'T', 'B', 'S', 'U', 'C']
+USDT&['USD']
+BNB&['USD', 'D', 'T', 'B', 'S', 'U', 'C']
+ADA&['USD', 'D', 'T', 'B', 'S', 'U', 'C']
+BAT&['USD', 'D', 'T', 'S', 'U']
+ETC&['USD', 'D', 'T', 'S', 'U']
+XLM&['USD', 'D', 'T', 'S', 'U']
+ZRX&['USD', 'D', 'T', 'S', 'U']
+LINK&['B', 'T', 'USD', 'C']
+RVN&['USD']
+DASH&['USD']
+ZEC&['USD']
+ALGO&['USD', 'D', 'B', 'S', 'U']
+IOTA&['USD']
+BUSD&['USD', 'D', 'T', 'S', 'U']
+DOGE&['D', 'S', 'U', 'USDT']
+WAVES&['USD']
+ATOM&['D', 'S', 'U', 'USDT']
+NEO&['D', 'S', 'U', 'USDT']
+VET&['D', 'T', 'USDT', 'B', 'S', 'U', 'C']
+QTUM&['D', 'S', 'U', 'USDT']
+NANO&['USD']
+ICX&['USD']
+ENJ&['USD']
+ONT&['USD', 'D', 'T', 'S', 'U']
+ZIL&['USD', 'D', 'B', 'S', 'U']
+XTZ&['USD', 'D', 'T', 'B', 'S', 'U', 'C']
+HBAR&['USD', 'D', 'B', 'S', 'U']
+OMG&['USD', 'D', 'B', 'S', 'U']
+MATIC&['USD', 'D', 'B', 'S', 'U']
+REP&['BUSD', 'D', 'S', 'U']
+EOS&['BUSD', 'D', 'S', 'U']
+KNC&['USD', 'D', 'T', 'S', 'U']
+VTHO&['D', 'S', 'U', 'USDT']
+USDC&['USD']
+COMP&['D', 'S', 'U', 'USDT']
+MANA&['USD']
+HNT&['USD', 'D', 'T', 'S', 'U']
+MKR&['USD', 'D', 'T', 'S', 'U']
+DAI&['USD']
+ONE&['D', 'USDT', 'B', 'S', 'U']
+BAND&['D', 'S', 'U', 'USDT']
+STORJ&['D', 'S', 'U', 'USDT']
+UNI&['USD', 'D', 'T', 'B', 'S', 'U', 'C']
+SOL&['USD', 'D', 'T', 'B', 'S', 'U', 'C']
+EGLD&['D', 'S', 'U', 'USDT']
+PAXG&['D', 'S', 'U', 'USDT']
+OXT&['D', 'S', 'U', 'USDT']
+ZEN&['D', 'S', 'U', 'USDT']
+FIL&['D', 'S', 'U', 'USDT']
+AAVE&['D', 'S', 'U', 'USDT']
+GRT&['USD']
+SUSHI&['USD']
+ANKR&['USD']
+AMP&['USD']
+SHIB&['D', 'USDT', 'B', 'S', 'U']
+CRV&['D', 'S', 'U', 'USDT']
+AXS&['D', 'S', 'U', 'USDT']
+AVAX&['D', 'S', 'U', 'USDT']
+CTSI&['D', 'S', 'U', 'USDT']
+DOT&['D', 'S', 'U', 'USDT']
+YFI&['D', 'S', 'U', 'USDT']

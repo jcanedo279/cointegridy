@@ -1,8 +1,8 @@
-from cointegridy.src.classes.cc_processor import Processor
+from cointegridy.src.classes.processor import Processor
 from cointegridy.src.classes.Time import Time
 
 
-def driver_cc_processor():
+def driver_processor():
 
     symbol = "DOGE"
 
@@ -12,11 +12,11 @@ def driver_cc_processor():
     for data in pc.symbol_to_ohlc_seq(symbol, t1, t2):
         pass
     
-    symbols = pc.get_api_symbols()
-    print(symbols)
+    symbols_to_denoms = pc.get_api_symbols_to_denoms()
+    print(symbols_to_denoms)
     tickers = pc.get_api_tickers()
     
 
 if __name__ == "__main__":
-    driver_cc_processor()
+    driver_processor()
     

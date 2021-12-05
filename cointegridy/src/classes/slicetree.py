@@ -472,11 +472,11 @@ class SliceTree(object):
     
     @staticmethod
     def l_rotate(x):
-        """[Left rotate]
+        """[Left Rotate]
             x             y
-             \           /
+             \\          /
               y   -->   x
-             /           \
+             /           \\
             b             b
         """
         
@@ -499,11 +499,11 @@ class SliceTree(object):
 
     @staticmethod
     def r_rotate(x):
-        """[Right rotate]
+        """[Right Rotate]
               x          y
-             /            \
+             /            \\
             y      -->     x
-             \            /
+             \\           /
               b          b
         """
         

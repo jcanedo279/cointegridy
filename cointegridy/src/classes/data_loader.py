@@ -8,13 +8,14 @@ import numpy as np
 import requests
 import shutil
 
-from cointegridy.src.classes.cc_processor import Processor
+from cointegridy.src.classes.processor import Processor
 from cointegridy.src.classes.Time import Time
 from cointegridy.src.classes.slicetree import SliceTree
 
 from cointegridy.src.utils.stats import sharpe_ratio
 
 TXT_DEL=' '
+TXT_SUB_DEL = '&'
 CSV_DEL=','
 
 
@@ -22,19 +23,16 @@ ROOT = '/'.join(os.path.dirname(os.path.abspath(__file__)).split('/')[:-3])
 DATA_PATH = f'{ROOT}/data/'
 
 DYNAMMIC_DATA_PATH = f'{DATA_PATH}dynammic_data'
-HISOTICAL_DATA_PATH = f'{DATA_PATH}historical_data'
 DATABASE_PATH = f'{DATA_PATH}database.csv'
 
 METADATA_PATH = f'{DATA_PATH}_metadata.txt'
 SR_PATH = f'{DATA_PATH}_sharpe_ratios.txt'
 
 
-if not os.path.exists(DATA_PATH):
-    os.mkdir(DATA_PATH)
 if not os.path.exists(DYNAMMIC_DATA_PATH):
+    if not os.path.exists(DATA_PATH):
+        os.mkdir(DATA_PATH)
     os.mkdir(DYNAMMIC_DATA_PATH)
-if not os.path.exists(HISOTICAL_DATA_PATH):
-    os.mkdir(HISOTICAL_DATA_PATH)
 
 
 INT_TO_MULTIPLIER = Time.int_to_multiplier()
@@ -64,9 +62,7 @@ class TreeSymbolLoader:
 
         ## If symbol does not have a data directory, create it
         if not os.path.exists(self.data_dir):
-            if not os.path.exists(self.symbol_dir):
-                os.mkdir(self.symbol_dir)
-            os.mkdir(self.data_dir)
+            self.create_dir()
         
         for dirname in os.listdir(self.data_dir):
             dirname_P = dirname[:-4] if dirname.endswith('csv') else dirname
@@ -76,6 +72,9 @@ class TreeSymbolLoader:
     
     
     def __getitem__(self, _slice: slice) -> Generator:
+        
+        if not os.path.exists(self.data_dir):
+            self.create_dir()
         
         assert isinstance(_slice, slice)
         start,stop,step = _slice.start,_slice.stop,_slice.step
@@ -163,6 +162,20 @@ class TreeSymbolLoader:
             tmsp = float(datum[0])
             if tmsp > running_max:
                 yield [float(item) for item in datum], max(tmsp, running_max)
+    
+    def create_dir(self):
+        if not os.path.exists(self.data_dir):
+            if not os.path.exists(self.symbol_dir):
+                os.mkdir(self.symbol_dir)
+            os.mkdir(self.data_dir)
+    
+    def clear(self, all_denoms=False):
+        rm_path = f'{DYNAMMIC_DATA_PATH}/{self.symbol}/' if all_denoms else f'{DYNAMMIC_DATA_PATH}/{self.symbol}/{self.denom}/'
+        if all_denoms:
+            shutil.rmtree(rm_path)
+        else:
+            shutil.rmtree(rm_path)
+        self.slice_tree = SliceTree()
 
 
 
@@ -174,10 +187,13 @@ class TreeLoader:
         
         if not os.path.exists(METADATA_PATH):
             with open(METADATA_PATH, 'w') as f_writer:
-                for symbol in self.pc.get_api_symbols():
-                    f_writer.write(symbol+'\n')
+                for symbol,denoms in self.get_api_symbols_to_denoms().items():
+                    print(f'{symbol}{TXT_SUB_DEL}{list(denoms)}\n')
+                    f_writer.write(f'{symbol}{TXT_SUB_DEL}{list(denoms)}\n')
+        self.symbols_to_denoms = TreeLoader.pull_symbols_from_metadata()
 
         for (symbol,denom), symb_data in data.items():
+            if denom not in self.symbols_to_denoms[symbol]: continue ## We do not have this symbol->denom in our _metadata
             loader = TreeSymbolLoader(symbol, denom, self.pc)
             self.asset_to_load_ind[(symbol,denom)] = len(self.loaded_loaders)
             for start_date, end_date, step_flag, value in symb_data:
@@ -189,7 +205,11 @@ class TreeLoader:
     
     def __getitem__(self, asset) -> TreeSymbolLoader:
         assert isinstance(asset,str) or isinstance(asset,slice)
-        symbol,denom = asset.split('/') if isinstance(asset,str) else asset.start,asset.stop
+        str_asset = None
+        if isinstance(asset,str):
+            str_asset = asset.split('/') if '/' in asset else asset
+        symbol,denom = str_asset if isinstance(asset,str) else asset.start,asset.stop
+        if not denom in self.symbols_to_denoms[symbol]: return
         
         loader = None        
         
@@ -209,19 +229,56 @@ class TreeLoader:
             if filename in INVALID_FILENAMES: continue
             shutil.rmtree(f'{DYNAMMIC_DATA_PATH}/{filename}')
     
+    ##########
+    ## UTIL ##
+    ##########
     
     @staticmethod
-    def pull_symbols():
+    def clear():
+        IGNORED_FILENAMES = {'.gitkeep'}
+        for filename in os.listdir(DYNAMMIC_DATA_PATH):
+            if filename in IGNORED_FILENAMES: continue
+            rm_path = f'{DYNAMMIC_DATA_PATH}/{filename}/'
+            shutil.rmtree(rm_path)
+            # os.rmdir(rm_path)
+    
+    
+    ###############
+    ## PROCESSOR ##
+    ###############
+    
+    def get_api_tickers(self):
+        return self.pc.get_api_tickers()
+    
+    def get_api_symbols_to_denoms(self):
+        return self.pc.get_api_symbols_to_denoms()
+
+    def push_symbols_from_api(self):
+        with open(METADATA_PATH, 'w') as f_writer:
+            for symbol,denoms in self.get_api_symbols_to_denoms.items():
+                f_writer.write(f'{symbol}{TXT_SUB_DEL}{list(denoms)}\n')
+    
+    ##############
+    ## METADATA ##
+    ##############
+    
+    @staticmethod
+    def pull_symbols_from_metadata():
+        symbols_to_denoms = {}
         with open(METADATA_PATH, 'r') as f_reader:
             for line in f_reader.readlines():
                 _line = line[:-1] if line.endswith('\n') else line
-                yield _line
+                symbol, denoms = _line.split(TXT_SUB_DEL)
+                _denoms = {denom.strip().strip("\'") for denom in denoms.strip('[]').split(CSV_DEL)}
+                symbols_to_denoms[symbol] = _denoms
+        return symbols_to_denoms
+    
     
     @staticmethod
-    def push_symbols(new_symbols):
+    def push_symbols_to_metadata(new_symbols, symbols_to_denoms):
         with open(METADATA_PATH, 'w') as f_writer:
             for symbol in new_symbols:
-                f_writer.write(symbol+'\n')
+                f_writer.write(f'{symbol}{TXT_SUB_DEL}{list(symbols_to_denoms[symbol])}\n')
 
 
 

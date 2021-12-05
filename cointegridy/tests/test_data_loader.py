@@ -11,9 +11,7 @@ def test_data_loader_sensibility_depth():
     samp_symbol, samp_denom = 'BTC', 'USD'
     
     ## Dismount data
-    data_path = f'data/dynammic_data/{samp_symbol}'
-    if os.path.exists(data_path):
-        shutil.rmtree(data_path)
+    TreeLoader.clear()
     
     ## Dismounted querry -> Mount
     assert_data_load(samp_symbol, samp_denom)
@@ -59,4 +57,5 @@ def assert_data_load(samp_symbol, samp_denom):
             assert datum[0]+Time.parse_interval_flag(samp_iflag) == next_datum[0]
         
         assert data[-1][0] == querry_eT.get_psx_tmsp()
+
 
