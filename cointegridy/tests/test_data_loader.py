@@ -62,11 +62,11 @@ def assert_data_load(samp_symbol, samp_denom):
 
 def test_metadata():
     
-    cached_metadata = TreeLoader.pull_symbols_from_metadata()
+    cached_metadata = TreeLoader.pull_metadata()
     
     ## TEST 1 ##
     
-    metadata = TreeLoader.pull_symbols_from_metadata(active=False)
+    metadata = TreeLoader.pull_metadata(active=False)
     
     symbol, denom = 'BTC', 'USD'
     assert symbol in metadata
@@ -76,9 +76,9 @@ def test_metadata():
     
     ## TEST 2 ##
     
-    TreeLoader.push_symbols_to_metadata([symbol])
+    TreeLoader.push_metadata([symbol])
     
-    active_metadata = TreeLoader.pull_symbols_from_metadata()
+    active_metadata = TreeLoader.pull_metadata()
     
     symbol_other = 'ETC'
     
@@ -89,17 +89,19 @@ def test_metadata():
     denoms = metadata[symbol]
     assert denom in denoms
     
-    TreeLoader.push_symbols_to_metadata(cached_metadata)
+    TreeLoader.push_metadata(cached_metadata)
+
 
 def test_filter_metadata():
     
-    cached_metadata = TreeLoader.pull_symbols_from_metadata()
+    cached_metadata = TreeLoader.pull_metadata()
     
     symbol, denom = 'BTC', 'USD'
     dataloader = TreeLoader()
     
     TreeLoader.reset_metadata()
-    metadata = TreeLoader.pull_symbols_from_metadata()
+    
+    assert 'BTC' in cached_metadata
     
     
     ## Filter coins by min volume
@@ -117,7 +119,7 @@ def test_filter_metadata():
     
     ## Test filter
     
-    assert 'BTC' not in TreeLoader.pull_symbols_from_metadata()
+    assert 'BTC' not in TreeLoader.pull_metadata()
     
-    TreeLoader.push_symbols_to_metadata(cached_metadata)
+    TreeLoader.push_metadata(cached_metadata.keys())
     

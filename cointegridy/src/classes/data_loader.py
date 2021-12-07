@@ -224,7 +224,7 @@ class TreeLoader:
         self.pc = PROCESSOR
         self.asset_to_load_ind, self.loaded_loaders = {}, []
         
-        self.symbols_to_denoms = TreeLoader.pull_symbols_from_metadata()
+        self.symbols_to_denoms = TreeLoader.pull_metadata()
         
         for (symbol,denom), symb_data in data.items():
             if denom not in self.symbols_to_denoms[symbol]: continue ## We do not have this symbol->denom in our _metadata
@@ -317,7 +317,7 @@ class TreeLoader:
         if not filters: return {}
         
         ## (symbol,denoms)
-        running_symbols_to_denoms, active_symbols_to_denoms = {}, TreeLoader.pull_symbols_from_metadata()
+        running_symbols_to_denoms, active_symbols_to_denoms = {}, TreeLoader.pull_metadata()
         
         for symbol,denoms in active_symbols_to_denoms.items():
             denom = list(denoms)[0]
@@ -330,11 +330,11 @@ class TreeLoader:
                         break
                 if is_filtered: running_symbols_to_denoms[symbol]=denom
                         
-        TreeLoader.push_symbols_to_metadata(running_symbols_to_denoms.keys())
+        TreeLoader.push_metadata(running_symbols_to_denoms.keys())
     
     @staticmethod
     def reset_metadata(active=True):
-        """[Resets the metadata files (symbols), if active -> reset active_metadata to metadata, if not active -> reset metadata from processor]
+        """[Resets the metadata files (symbols), if active -> reset active_metadata from metadata, if not active -> reset metadata from processor]
         """
         if active:
             if not os.path.exists(METADATA_PATH):
@@ -346,7 +346,7 @@ class TreeLoader:
                     f_writer.write(f'{symbol}{TXT_SUB_DEL}{list(denoms)}\n')
     
     @staticmethod
-    def pull_symbols_from_metadata(active=True):
+    def pull_metadata(active=True):
         symbols_to_denoms = {}
         metadata_path = ACTIVE_METADATA_PATH if active else METADATA_PATH
         with open(metadata_path, 'r') as f_reader:
@@ -358,8 +358,8 @@ class TreeLoader:
         return symbols_to_denoms
     
     @staticmethod
-    def push_symbols_to_metadata(new_symbols:Iterable, active=True):
-        symbols_to_denoms = TreeLoader.pull_symbols_from_metadata(active=False)
+    def push_metadata(new_symbols:Iterable, active=True):
+        symbols_to_denoms = TreeLoader.pull_metadata(active=False)
         metadata_path = ACTIVE_METADATA_PATH if active else METADATA_PATH
         with open(metadata_path, 'w') as f_writer:
             for symbol in new_symbols:
