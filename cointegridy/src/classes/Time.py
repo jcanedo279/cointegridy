@@ -208,7 +208,7 @@ class Time:
     def iter_Time(start_Time, end_Time, sec_interval=600, conv=False):
         """
             start_Time, end_Time: random Time objects
-            conv: False -> string format return, True -> int tuple format return
+            conv: False -> string format return, True -> Time format return
             
             Returns: Time object generator
         """

@@ -2,6 +2,7 @@
 Functions that get data from FTX.
 """
 import os
+from typing import Generator
 
 import ccxt
 
@@ -11,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-DEFAULT_NUM_STEPS = 499
+DEFAULT_NUM_STEPS = 500
 
 class Processor:
     
@@ -23,16 +24,17 @@ class Processor:
             'timeout': 30*1000,
             'enableRateLimit': True,
         })
+        self.exchange.load_markets()
     
-    def symbol_to_ohlc_seq(self, symbol, start_Time, end_Time, denom='USD', interval_flag="6h"):
+    
+    def symbol_to_ohlc_seq(self, symbol, start_Time, end_Time, denom='USD', interval_flag="6h") -> Generator:
         """
             exchange: exchange object, (e.g. ccxt.ftx())
             symbol: symbol for the product (e.g. BTC/USD)
             since (datetime.datetime): start of the data feed
             limit: number of data bars to get per request
             td_symbol: symbol for the timedelta, e.g. "1m" is 1 minute
-            exchange_name: name to use in dataframe for exchange data; this can be anything
-            interval_flag: int + {"S", "m", "h" "D"}
+            exchange_name: name to use in dataframe for exchange data; this can be anything\
         """
         
         assert interval_flag in Time.valid_flags()
@@ -40,18 +42,19 @@ class Processor:
         product = f'{symbol}/{denom}'
         
         start, stop, step = int(start_Time.get_psx_tmsp()*1000), int(end_Time.get_psx_tmsp()*1000), Time.parse_interval_flag(interval_flag)*1000
+        limit = int((stop-start)//step)
+        
+        for datum in self.exchange.fetch_ohlcv(product, timeframe=interval_flag, since=start, limit=limit):
+            yield [int(float(datum[0])/1000)] + [float(d) for d in datum[1:]]
             
-        limit = int((stop-start)/step)+1
-        for datum in self.exchange.fetch_ohlcv(product, timeframe=interval_flag, since=int(start), limit=limit):
-            yield [int(float(datum[0])/1000)] + datum[1:]
     
-    
-    def get_api_tickers(self):
+    def get_api_tickers(self) -> list:
         return self.exchange.fetch_tickers().keys()
     
-    def get_api_symbols_to_denoms(self):
+    
+    def get_api_symbols_to_denoms(self) -> dict:
         symbols_to_denoms = {}
-        for ticker in self.get_api_tickers():
+        for ticker in self.exchange.symbols:
             symbol,denom = ticker.split('/')
             if symbol in symbols_to_denoms:
                 symbols_to_denoms[symbol].update(denom)

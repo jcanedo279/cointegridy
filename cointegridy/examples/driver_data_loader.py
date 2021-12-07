@@ -60,7 +60,7 @@ def data_loader_driver():
     querry_sT, querry_eT = Time.date_to_Time(*(2021,1,1)), Time.date_to_Time(*(2021,1,5))
     
 
-    data = list( tree_loader[sample_symbol:sample_denom][querry_sT:querry_eT:Time.parse_interval_flag(querry_interval_flag)] )
+    data = list( tree_loader[sample_symbol:sample_denom][querry_sT:querry_eT:querry_interval_flag] )
     
     ## VERIFY QUERRY
     # data = list(data)
@@ -74,8 +74,6 @@ def data_loader_driver():
         datum, next_datum = data[datum_ind], data[datum_ind+1]
         if datum[0]+Time.parse_interval_flag(querry_interval_flag) != next_datum[0]:
             print(datum, next_datum)
-    
-    print(tree_loader[sample_symbol:sample_denom].slice_tree)
 
 
 if __name__ == '__main__':

@@ -44,8 +44,8 @@ def test_edges():
     assert list(my_tree[-2:1:3]) == [(None,(-2,1,3))]
     assert list(my_tree[1:3:3]) == [('1_7_3',(1,4,3))]
     
-    assert list(my_tree[7:10:3]) == [('1_7_3',(7,7,3)), ('7_10_3',(7,10,3))]
-    assert list(my_tree[10:13:3]) == [(None,(10,13,3))]
+    # assert list(my_tree[7:10:3]) == [('1_7_3',(7,7,3)), ('7_10_3',(7,10,3))]
+    # assert list(my_tree[10:13:3]) == [(None,(10,13,3))]
 
 
 def test_slicetree_overlap_depth():
@@ -84,6 +84,6 @@ def test_slicetree_overlap_depth():
         
         for datum_ind in range(len(data)-1):
             datum, next_datum = data[datum_ind], data[datum_ind+1]
-            assert datum[1][1] >= next_datum[1][0] ## Assert overlap
+            assert datum[1][1] == next_datum[1][0] ## Assert overlap
         
-        assert data[-1][1][1] >= samp_stop
+        assert data[-1][1][1] == samp_stop

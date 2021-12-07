@@ -104,7 +104,6 @@ celerybeat.pid
 # Environments
 .env
 .venv
-env/
 venv/*
 ENV/
 env.bak/
@@ -146,5 +145,10 @@ important.txt
 
 !data/_metadata.txt
 
+!env
+env/.env
+
 data/historical_data/*
 data/dynammic_data/*
+
+*important.txt
