@@ -145,7 +145,8 @@ important.txt
 
 !data/_metadata.txt
 
-# env/*
+!env
+env/.env
 
 data/historical_data/*
 data/dynammic_data/*
