@@ -96,7 +96,6 @@ def test_filter_metadata():
     
     cached_metadata = TreeLoader.pull_metadata()
     
-    symbol, denom = 'BTC', 'USD'
     dataloader = TreeLoader()
     
     TreeLoader.reset_metadata()
@@ -116,6 +115,7 @@ def test_filter_metadata():
     filters = [f1]
     
     TreeLoader._filter(filters, filter_sT, filter_eT, interval_flag=filter_step)
+    
     
     ## Test filter
     
