@@ -104,7 +104,6 @@ celerybeat.pid
 # Environments
 .env
 .venv
-env/
 venv/*
 ENV/
 env.bak/
@@ -145,6 +144,8 @@ important.txt
 *get-pip.py
 
 !data/_metadata.txt
+
+# env/*
 
 data/historical_data/*
 data/dynammic_data/*
