@@ -150,3 +150,5 @@ env/.env
 
 data/historical_data/*
 data/dynammic_data/*
+
+*important.txt
