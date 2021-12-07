@@ -11,6 +11,35 @@ from cointegridy.src.classes.Time import Time
 from cointegridy.src.classes.slicetree import SliceTree
 
 
+################
+## FILTRATION ##
+################
+
+PROCESSOR = Processor(exchange_id='binanceus')
+
+LT_OHLC = lambda ref,ohlcv:ref<=ohlcv[5]
+    
+class Filter:
+    """[Filter helper class defines a filter that acts on a coin and]
+    
+    Args:
+        ref (comparable): some comparable value
+        comp_lamda (lambda): a lambda expression between two comparables
+        
+        __call__(other) (function(comparable)) -> bool: a function (ref com_lampda other) -> bool
+    """
+    
+    def __init__(self, ref, comp_lambda=LT_OHLC):
+        self.ref, self.comp_lambda = ref, comp_lambda
+    
+    def __call__(self, ohlcv):
+        return self.comp_lambda(self.ref, ohlcv)
+
+
+##################
+## DATA PARSING ##
+##################
+
 TXT_DEL=' '
 TXT_SUB_DEL = '&'
 CSV_DEL=','
@@ -32,7 +61,7 @@ METADATA_PATH = f'{DATA_PATH}_metadata.txt'
 ACTIVE_METADATA_PATH = f'{DATA_PATH}_active_metadata.txt'
 
 if not os.path.exists(METADATA_PATH):
-    pc = Processor()
+    pc = PROCESSOR
     with open(METADATA_PATH, 'w') as f_writer:
         for symbol,denoms in pc.get_api_symbols_to_denoms().items():
             print(f'{symbol}{TXT_SUB_DEL}{list(denoms)}\n')
@@ -60,9 +89,9 @@ class TreeSymbolLoader:
         Acts as a wrapper to grab symbol timestamp data as a class item
     """
     
-    def __init__(self, symbol, denom, processor, mode=DEFAULT_MODE):
+    def __init__(self, symbol, denom, mode=DEFAULT_MODE):
         self.mode = mode
-        self.pc = processor
+        self.pc = PROCESSOR
         self.symbol, self.denom = symbol.upper(), denom.upper()
         self.symbol_dir = f'{DYNAMMIC_DATA_PATH}/{self.symbol}'
         self.data_dir = f'{self.symbol_dir}/{self.denom}/'
@@ -91,7 +120,6 @@ class TreeSymbolLoader:
             df = pd.DataFrame(data=[row for row in self.gen_data(_slice)], columns=['tmsp', 'open', 'high', 'low', 'close', 'volume'])
             df.set_index('tmsp')
             return df
-        
     
     def gen_data(self, _slice:slice):
         assert isinstance(_slice, slice)
@@ -102,7 +130,6 @@ class TreeSymbolLoader:
             start = start.get_psx_tmsp()
         if isinstance(stop, Time):
             stop = stop.get_psx_tmsp()
-        
         step = DEFAULT_STEP if not step else step
         i_flag = Time.valid_steps()[step]
         
@@ -110,7 +137,6 @@ class TreeSymbolLoader:
         cached_missing = set()
         running_max, seq_targ = start-1, start
         for filename, interval in self.slice_tree[start:stop:step]:
-            
             if not filename: ## Stash this interval to put into memory later
                 cached_missing.add(interval)
             
@@ -125,24 +151,20 @@ class TreeSymbolLoader:
                 for sub_dirname in sorted(os.listdir(self.data_dir+cur_rep)): ## TODO:: AT SOME POINT OPTIMIZE THIS SUB STRUCTURE
                     sub_dirname_P = sub_dirname[:-4] if sub_dirname.endswith('.csv') else sub_dirname
                     s_start,s_stop,s_step = [float(x) for x in sub_dirname_P.split('_')]
-                    if running_max <= _stop:
-                        for datum, running_max in self.pull_seq_from_loaded(cur_rep+sub_dirname, running_max):
-                            if running_max==seq_targ:
-                                yield datum
-                                seq_targ += step
-                    else: break
-                running_max = seq_targ - step
+                    if s_stop < _start: continue
+                    for datum in self.pull_seq_from_loaded(cur_rep+sub_dirname):
+                        if float(datum[0]) >= _start:
+                            yield datum
             
             else: ## File does not exist
                 c_start = _start
                 while c_start+step*DEFAULT_NUM_STEPS < _stop:
-                    for datum, running_max in self.pull_seq_from_bnc(c_start,c_start+step*DEFAULT_NUM_STEPS,running_max,interval_flag=i_flag):
+                    for datum in self.pull_seq_from_bnc(c_start,c_start+step*DEFAULT_NUM_STEPS,interval_flag=i_flag):
                         yield datum
                     c_start += step*DEFAULT_NUM_STEPS
-                if c_start <= _stop:
-                    for datum, running_max in self.pull_seq_from_bnc(c_start,_stop,running_max,interval_flag=i_flag):
+                if c_start < _stop:
+                    for datum in self.pull_seq_from_bnc(c_start,_stop,interval_flag=i_flag):
                         yield datum
-                seq_targ = running_max + step
         
         ## Add cached_missing to local
         for c_start,c_stop,c_step in cached_missing:
@@ -166,20 +188,17 @@ class TreeSymbolLoader:
             
             self.slice_tree[c_start:c_stop:c_step] = c_rep
     
-    def pull_seq_from_loaded(self, filename, running_max):
+    
+    def pull_seq_from_loaded(self, filename):
         with open(self.data_dir+filename, 'r') as f_reader:
             reader = csv.reader(f_reader)
             for line in reader:
-                tmsp = float(line[0])
-                if tmsp >= running_max:
-                    yield [float(item) for item in line], max(tmsp, running_max)
+                yield [float(item) for item in line]
     
-    def pull_seq_from_bnc(self, start_tmsp, stop_tmsp, running_max, interval_flag='5m'): ## ONLY GRAB WHAT YOU NEED TO HERE
-        for datum in self.pc.symbol_to_ohlc_seq(self.symbol, Time(utc_tmsp=max(start_tmsp,running_max)), Time(utc_tmsp=stop_tmsp), interval_flag=interval_flag, denom=self.denom):
+    def pull_seq_from_bnc(self, start_tmsp, stop_tmsp, interval_flag='5m'): ## ONLY GRAB WHAT YOU NEED TO HERE
+        for datum in PROCESSOR.symbol_to_ohlc_seq(self.symbol, Time(utc_tmsp=start_tmsp), Time(utc_tmsp=stop_tmsp), denom=self.denom, interval_flag=interval_flag):
             ### datum = [tmsp, open, high, low, close, volume]
-            tmsp = float(datum[0])
-            if tmsp > running_max:
-                yield [float(item) for item in datum], max(tmsp, running_max)
+            yield [float(item) for item in datum]
     
     def create_dir(self):
         if not os.path.exists(self.data_dir):
@@ -202,21 +221,21 @@ class TreeLoader:
     def __init__(self, data={}, mode=DEFAULT_MODE):
         self.mode = mode
         
-        self.pc = Processor()
+        self.pc = PROCESSOR
         self.asset_to_load_ind, self.loaded_loaders = {}, []
         
         self.symbols_to_denoms = TreeLoader.pull_symbols_from_metadata()
         
-
         for (symbol,denom), symb_data in data.items():
             if denom not in self.symbols_to_denoms[symbol]: continue ## We do not have this symbol->denom in our _metadata
-            loader = TreeSymbolLoader(symbol, denom, self.pc, mode=self.mode)
+            loader = TreeSymbolLoader(symbol, denom, mode=self.mode)
             self.asset_to_load_ind[(symbol,denom)] = len(self.loaded_loaders)
             for start_date, end_date, step_flag, value in symb_data:
                 start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
                 for _ in loader[start_Time:end_Time:Time.parse_interval_flag(step_flag)]:
                     pass
             self.loaded_loaders.append(loader)
+        
     
     def __getitem__(self, asset) -> TreeSymbolLoader:
         assert isinstance(asset,str) or isinstance(asset,slice)
@@ -231,10 +250,11 @@ class TreeLoader:
             loader_ind = self.asset_to_load_ind[(symbol,denom)]
             loader = self.loaded_loaders[loader_ind]
         else: ## If this is a new symbol
-            loader = TreeSymbolLoader(symbol, denom, self.pc, mode=self.mode)
+            loader = TreeSymbolLoader(symbol, denom, mode=self.mode)
         loader.mode = self.mode
         return loader
 
+    
     def change_mode(self, mode=None):
         if mode:
             self.mode = mode
@@ -249,6 +269,7 @@ class TreeLoader:
         for filename in os.listdir(DYNAMMIC_DATA_PATH):
             if filename in INVALID_FILENAMES: continue
             shutil.rmtree(f'{DYNAMMIC_DATA_PATH}/{filename}')
+    
     
     ##########
     ## UTIL ##
@@ -269,15 +290,10 @@ class TreeLoader:
     ###############
     
     def get_api_tickers(self):
-        return self.pc.get_api_tickers()
+        return PROCESSOR.get_api_tickers()
     
     def get_api_symbols_to_denoms(self):
-        return self.pc.get_api_symbols_to_denoms()
-
-    def push_symbols_from_api(self):
-        with open(METADATA_PATH, 'w') as f_writer:
-            for symbol,denoms in self.get_api_symbols_to_denoms.items():
-                f_writer.write(f'{symbol}{TXT_SUB_DEL}{list(denoms)}\n')
+        return PROCESSOR.get_api_symbols_to_denoms()
     
     
     ##############
@@ -285,11 +301,49 @@ class TreeLoader:
     ##############
     
     @staticmethod
-    def reset_active_metadata():
-        pc = Processor()
-        with open(ACTIVE_METADATA_PATH, 'w') as f_writer:
-            for symbol,denoms in pc.get_api_symbols_to_denoms.items():
-                f_writer.write(f'{symbol}{TXT_SUB_DEL}{list(denoms)}\n')
+    def _filter(filters:list, start_Time:Time, end_Time:Time, interval_flag:str='6h'):
+        """Filter the active metadata symbols by the filter functions in filters
+
+        Args:
+            filters (list): A list of filters that
+        
+        Returns:
+            a symbol to denoms dict 
+        """
+        
+        assert isinstance(interval_flag,str)
+        
+        filters = [_filter for _filter in filters if isinstance(_filter,Filter)]
+        if not filters: return {}
+        
+        ## (symbol,denoms)
+        running_symbols_to_denoms, active_symbols_to_denoms = {}, TreeLoader.pull_symbols_from_metadata()
+        
+        for symbol,denoms in active_symbols_to_denoms.items():
+            denom = list(denoms)[0]
+            if not f'{symbol}/{denom}' in PROCESSOR.exchange.symbols: continue
+            for ohlcv in PROCESSOR.symbol_to_ohlc_seq(symbol, start_Time, end_Time, denom=denom, interval_flag=interval_flag):
+                is_filtered = True
+                for _filter in filters:
+                    if not _filter(ohlcv):
+                        is_filtered = False
+                        break
+                if is_filtered: running_symbols_to_denoms[symbol]=denom
+                        
+        TreeLoader.push_symbols_to_metadata(running_symbols_to_denoms.keys())
+    
+    @staticmethod
+    def reset_metadata(active=True):
+        """[Resets the metadata files (symbols), if active -> reset active_metadata to metadata, if not active -> reset metadata from processor]
+        """
+        if active:
+            if not os.path.exists(METADATA_PATH):
+                TreeLoader.reset_metadata(active=False)
+            shutil.copy(METADATA_PATH, ACTIVE_METADATA_PATH)
+        else:
+            with open(METADATA_PATH, 'w') as f_writer:
+                for symbol,denoms in PROCESSOR.get_api_symbols_to_denoms.items():
+                    f_writer.write(f'{symbol}{TXT_SUB_DEL}{list(denoms)}\n')
     
     @staticmethod
     def pull_symbols_from_metadata(active=True):

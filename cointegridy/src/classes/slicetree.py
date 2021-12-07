@@ -240,27 +240,36 @@ class SliceTree(object):
         if start==stop and step==0: ## If point querry --> single solution
             yield running_node.value, (seq_max,seq_max,0)
         if start < running_node.start:
-            yield None, (start, running_node.start, step)
-            seq_max = running_node.start
-            
+            div_max = start + ((running_node.start-start)//step)*step
+            if div_max < running_node.start: div_max += step
+            yield None, (start, div_max, step)
+            seq_max = div_max
         
         for node in querry_generator:
             if seq_max >= stop: return
             if running_node.stop >= stop: break
-            if node.start<=running_node.start: ## Update running node
+            if node.stop <= running_node.stop: continue
+            if node.start<=seq_max: ## Update running node
                 if node.stop > running_node.stop:
                     running_node = node
             else: ## New running node
                 if node.stop > running_node.stop:
-                    yield running_node.value, (seq_max, running_node.stop, running_node.step)
-                    seq_max = running_node.stop
+                    div_running_max = seq_max + ((running_node.stop-seq_max)//step)*step
+                    yield running_node.value, (seq_max, div_running_max, running_node.step)
+                    seq_max = div_running_max
+                    
                     if seq_max < node.start: ## Gap
-                        yield None, (seq_max, node.start, step)
-                        seq_max = node.start
+                        div_max = seq_max + ((node.start-seq_max)//step)*step
+                        if div_max < node.start: div_max += step
+                        yield None, (seq_max, div_max, step)
+                        seq_max = div_max
                     running_node = node
         if seq_max < running_node.stop and seq_max < stop:
-            yield running_node.value, (seq_max, min(running_node.stop, stop), running_node.step)
-            seq_max = min(running_node.stop, stop)
+            div_max = seq_max + ((running_node.stop-seq_max)//step)*step
+            if div_max < running_node.stop: div_max += step
+            div_max = min(div_max, stop)
+            yield running_node.value, (seq_max, div_max, running_node.step)
+            seq_max = div_max
         if seq_max < stop:
             yield None, (seq_max, stop, step)
 
