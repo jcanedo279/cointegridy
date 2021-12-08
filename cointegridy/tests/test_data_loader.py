@@ -2,12 +2,12 @@ import shutil
 import os
 
 from cointegridy.src.classes.data_loader import TreeLoader, Filter
-from cointegridy.src.classes.Time import Time
-
-_ = TreeLoader()
+from cointegridy.src.classes.Time import Time\
 
 
 def test_data_loader_sensibility_depth():
+    
+    TreeLoader.reset_metadata()
     
     samp_symbol, samp_denom = 'BTC', 'BUSD'
     
@@ -63,6 +63,8 @@ def assert_data_load(samp_symbol, samp_denom):
 
 def test_metadata():
     
+    TreeLoader.reset_metadata()
+    
     ## TEST 1 ##
     
     metadata = TreeLoader.pull_metadata(active=False)
@@ -111,7 +113,6 @@ def test_filter_metadata():
     
     TreeLoader._filter(filters, filter_sT, filter_eT, interval_flag=filter_step)
     
-    print('active', TreeLoader.pull_metadata())
     
     ## Test filter
     
