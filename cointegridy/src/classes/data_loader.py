@@ -227,8 +227,7 @@ class TreeLoader:
         self.symbol_to_denoms = TreeLoader.pull_metadata()
         
         for (symbol,denom), symb_data in data.items():
-            if symbol not in self.symbol_to_denoms: continue
-            if denom not in self.symbol_to_denoms[symbol]: continue ## We do not have this symbol->denom in our _metadata
+            if not f'{symbol}/{denom}' in self.pc.exchange.markets: continue
             loader = TreeSymbolLoader(symbol, denom, mode=self.mode)
             self.asset_to_load_ind[(symbol,denom)] = len(self.loaded_loaders)
             for start_date, end_date, step_flag, value in symb_data:

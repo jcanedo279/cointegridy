@@ -41,6 +41,8 @@ class Processor:
         
         product = f'{symbol}/{denom}'
         
+        # if not product in self.exchange.market(): return
+        
         start, stop, step = int(start_Time.get_psx_tmsp()*1000), int(end_Time.get_psx_tmsp()*1000), Time.parse_interval_flag(interval_flag)*1000
         limit = int((stop-start)//step)
         
