@@ -41,6 +41,8 @@ class Processor:
         
         product = f'{symbol}/{denom}'
         
+        # if not product in self.exchange.market(): return
+        
         start, stop, step = int(start_Time.get_psx_tmsp()*1000), int(end_Time.get_psx_tmsp()*1000), Time.parse_interval_flag(interval_flag)*1000
         limit = int((stop-start)//step)
         
@@ -52,12 +54,12 @@ class Processor:
         return self.exchange.fetch_tickers().keys()
     
     
-    def get_api_symbols_to_denoms(self) -> dict:
-        symbols_to_denoms = {}
+    def get_api_metadata(self) -> dict:
+        symbol_to_denoms = {}
         for ticker in self.exchange.symbols:
             symbol,denom = ticker.split('/')
-            if symbol in symbols_to_denoms:
-                symbols_to_denoms[symbol].update(denom)
+            if symbol in symbol_to_denoms:
+                symbol_to_denoms[symbol].update(denom)
             else:
-                symbols_to_denoms[symbol] = {denom}
-        return symbols_to_denoms
+                symbol_to_denoms[symbol] = {denom}
+        return symbol_to_denoms

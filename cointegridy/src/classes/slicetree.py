@@ -224,8 +224,7 @@ class SliceTree(object):
         for is_subtree, parent in querry_anc_generator:
             if is_subtree: yield from self.traverse_inorder_interior(_slice, parent)
             else: yield from self.yield_wrapper(_slice, parent)
-        
-        
+    
     
     def full_querry(self, _slice:slice) -> Generator:
         start,stop,step=SliceTree.fix_interval(_slice, default_step=self.default_step)

@@ -2,13 +2,14 @@ import shutil
 import os
 
 from cointegridy.src.classes.data_loader import TreeLoader, Filter
-from cointegridy.src.classes.Time import Time
-
+from cointegridy.src.classes.Time import Time\
 
 
 def test_data_loader_sensibility_depth():
     
-    samp_symbol, samp_denom = 'BTC', 'USD'
+    TreeLoader.reset_metadata()
+    
+    samp_symbol, samp_denom = 'BTC', 'BUSD'
     
     ## Dismount data
     TreeLoader.clear()
@@ -62,13 +63,13 @@ def assert_data_load(samp_symbol, samp_denom):
 
 def test_metadata():
     
-    cached_metadata = TreeLoader.pull_symbols_from_metadata()
+    TreeLoader.reset_metadata()
     
     ## TEST 1 ##
     
-    metadata = TreeLoader.pull_symbols_from_metadata(active=False)
+    metadata = TreeLoader.pull_metadata(active=False)
     
-    symbol, denom = 'BTC', 'USD'
+    symbol, denom = 'BTC', 'BUSD'
     assert symbol in metadata
     denoms = metadata[symbol]
     assert denom in denoms
@@ -76,9 +77,9 @@ def test_metadata():
     
     ## TEST 2 ##
     
-    TreeLoader.push_symbols_to_metadata([symbol])
+    TreeLoader.push_metadata([symbol])
     
-    active_metadata = TreeLoader.pull_symbols_from_metadata()
+    active_metadata = TreeLoader.pull_metadata()
     
     symbol_other = 'ETC'
     
@@ -88,18 +89,15 @@ def test_metadata():
     assert symbol in metadata
     denoms = metadata[symbol]
     assert denom in denoms
-    
-    TreeLoader.push_symbols_to_metadata(cached_metadata)
+
 
 def test_filter_metadata():
     
-    cached_metadata = TreeLoader.pull_symbols_from_metadata()
-    
-    symbol, denom = 'BTC', 'USD'
-    dataloader = TreeLoader()
-    
     TreeLoader.reset_metadata()
-    metadata = TreeLoader.pull_symbols_from_metadata()
+    
+    active_metadata = TreeLoader.pull_metadata()
+    
+    assert 'BTC' in active_metadata
     
     
     ## Filter coins by min volume
@@ -109,15 +107,16 @@ def test_filter_metadata():
     
     comp_lt = lambda ref,ohlcv: ref<=ohlcv[5]
     
-    f1 = Filter(0.1, comp_lambda=comp_lt)
+    f1 = Filter(1000, comp_lambda=comp_lt)
     
     filters = [f1]
     
     TreeLoader._filter(filters, filter_sT, filter_eT, interval_flag=filter_step)
     
+    
     ## Test filter
     
-    assert 'BTC' not in TreeLoader.pull_symbols_from_metadata()
+    assert 'BTC' not in TreeLoader.pull_metadata()
     
-    TreeLoader.push_symbols_to_metadata(cached_metadata)
+    TreeLoader.push_metadata(active_metadata.keys())
     

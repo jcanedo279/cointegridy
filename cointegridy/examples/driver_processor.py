@@ -12,8 +12,8 @@ def driver_processor():
     for data in pc.symbol_to_ohlc_seq(symbol, t1, t2):
         pass
     
-    symbols_to_denoms = pc.get_api_symbols_to_denoms()
-    print(symbols_to_denoms)
+    symbol_to_denoms = pc.get_api_metadata()
+    print(symbol_to_denoms)
     tickers = pc.get_api_tickers()
     
 

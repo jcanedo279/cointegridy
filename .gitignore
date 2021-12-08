@@ -144,6 +144,8 @@ important.txt
 *get-pip.py
 
 !data/_metadata.txt
+data/_active_metadata.txt
+data/_cached_metadata.txt
 
 !env
 env/.env
