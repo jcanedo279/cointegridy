@@ -63,7 +63,7 @@ ACTIVE_METADATA_PATH = f'{DATA_PATH}_active_metadata.txt'
 if not os.path.exists(METADATA_PATH):
     pc = PROCESSOR
     with open(METADATA_PATH, 'w') as f_writer:
-        for symbol,denoms in pc.get_api_symbols_to_denoms().items():
+        for symbol,denoms in pc.get_api_metadata().items():
             print(f'{symbol}{TXT_SUB_DEL}{list(denoms)}\n')
             f_writer.write(f'{symbol}{TXT_SUB_DEL}{list(denoms)}\n')
 if not os.path.exists(ACTIVE_METADATA_PATH):
@@ -224,10 +224,10 @@ class TreeLoader:
         self.pc = PROCESSOR
         self.asset_to_load_ind, self.loaded_loaders = {}, []
         
-        self.symbols_to_denoms = TreeLoader.pull_metadata()
+        self.symbol_to_denoms = TreeLoader.pull_metadata()
         
         for (symbol,denom), symb_data in data.items():
-            if denom not in self.symbols_to_denoms[symbol]: continue ## We do not have this symbol->denom in our _metadata
+            if denom not in self.symbol_to_denoms[symbol]: continue ## We do not have this symbol->denom in our _metadata
             loader = TreeSymbolLoader(symbol, denom, mode=self.mode)
             self.asset_to_load_ind[(symbol,denom)] = len(self.loaded_loaders)
             for start_date, end_date, step_flag, value in symb_data:
@@ -243,7 +243,7 @@ class TreeLoader:
         if isinstance(asset,str):
             str_asset = asset.split('/') if '/' in asset else asset
         symbol,denom = str_asset if isinstance(asset,str) else asset.start,asset.stop
-        if not denom in self.symbols_to_denoms[symbol]: return
+        if not denom in self.symbol_to_denoms[symbol]: return
         
         loader = None
         if (symbol,denom) in self.asset_to_load_ind: ## If we have seen symbol before
@@ -292,8 +292,8 @@ class TreeLoader:
     def get_api_tickers(self):
         return PROCESSOR.get_api_tickers()
     
-    def get_api_symbols_to_denoms(self):
-        return PROCESSOR.get_api_symbols_to_denoms()
+    def get_api_metadata(self):
+        return PROCESSOR.get_api_metadata()
     
     
     ##############
@@ -317,9 +317,9 @@ class TreeLoader:
         if not filters: return {}
         
         ## (symbol,denoms)
-        running_symbols_to_denoms, active_symbols_to_denoms = {}, TreeLoader.pull_metadata()
+        running_symbol_to_denoms, active_symbol_to_denoms = {}, TreeLoader.pull_metadata()
         
-        for symbol,denoms in active_symbols_to_denoms.items():
+        for symbol,denoms in active_symbol_to_denoms.items():
             denom = list(denoms)[0]
             if not f'{symbol}/{denom}' in PROCESSOR.exchange.symbols: continue
             for ohlcv in PROCESSOR.symbol_to_ohlc_seq(symbol, start_Time, end_Time, denom=denom, interval_flag=interval_flag):
@@ -328,9 +328,10 @@ class TreeLoader:
                     if not _filter(ohlcv):
                         is_filtered = False
                         break
-                if is_filtered: running_symbols_to_denoms[symbol]=denom
+                if is_filtered: running_symbol_to_denoms[symbol]=denom
                         
-        TreeLoader.push_metadata(running_symbols_to_denoms.keys())
+        TreeLoader.push_metadata(running_symbol_to_denoms.keys())
+    
     
     @staticmethod
     def reset_metadata(active=True):
@@ -342,27 +343,32 @@ class TreeLoader:
             shutil.copy(METADATA_PATH, ACTIVE_METADATA_PATH)
         else:
             with open(METADATA_PATH, 'w') as f_writer:
-                for symbol,denoms in PROCESSOR.get_api_symbols_to_denoms.items():
+                for symbol,denoms in PROCESSOR.get_api_metadata.items():
                     f_writer.write(f'{symbol}{TXT_SUB_DEL}{list(denoms)}\n')
     
     @staticmethod
     def pull_metadata(active=True):
-        symbols_to_denoms = {}
+        symbol_to_denoms = {}
         metadata_path = ACTIVE_METADATA_PATH if active else METADATA_PATH
         with open(metadata_path, 'r') as f_reader:
             for line in f_reader.readlines():
                 _line = line[:-1] if line.endswith('\n') else line
                 symbol, denoms = _line.split(TXT_SUB_DEL)
                 _denoms = {denom.strip().strip("\'") for denom in denoms.strip('[]').split(CSV_DEL)}
-                symbols_to_denoms[symbol] = _denoms
-        return symbols_to_denoms
+                symbol_to_denoms[symbol] = _denoms
+        return symbol_to_denoms
     
     @staticmethod
     def push_metadata(new_symbols:Iterable, active=True):
-        symbols_to_denoms = TreeLoader.pull_metadata(active=False)
+        new_symbols_set = set(new_symbols)
         metadata_path = ACTIVE_METADATA_PATH if active else METADATA_PATH
+        
+        metadata_reader = []
+        with open(metadata_path, 'r') as f_reader:
+            metadata_reader = f_reader.readlines()
+        
         with open(metadata_path, 'w') as f_writer:
-            for symbol in new_symbols:
-                f_writer.write(f'{symbol}{TXT_SUB_DEL}{list(symbols_to_denoms[symbol])}\n')
-
+            for line in metadata_reader:
+                if line.split(TXT_SUB_DEL)[0] in new_symbols_set:
+                    f_writer.write(line)
 

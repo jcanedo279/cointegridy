@@ -4,11 +4,12 @@ import os
 from cointegridy.src.classes.data_loader import TreeLoader, Filter
 from cointegridy.src.classes.Time import Time
 
+_ = TreeLoader()
 
 
 def test_data_loader_sensibility_depth():
     
-    samp_symbol, samp_denom = 'BTC', 'USD'
+    samp_symbol, samp_denom = 'BTC', 'BUSD'
     
     ## Dismount data
     TreeLoader.clear()
@@ -68,7 +69,7 @@ def test_metadata():
     
     metadata = TreeLoader.pull_metadata(active=False)
     
-    symbol, denom = 'BTC', 'USD'
+    symbol, denom = 'BTC', 'BUSD'
     assert symbol in metadata
     denoms = metadata[symbol]
     assert denom in denoms
@@ -95,8 +96,6 @@ def test_metadata():
 def test_filter_metadata():
     
     cached_metadata = TreeLoader.pull_metadata()
-    
-    dataloader = TreeLoader()
     
     TreeLoader.reset_metadata()
     
