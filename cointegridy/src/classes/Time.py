@@ -45,7 +45,7 @@ class Time:
             The time we use here is Possix time (measured as of 00:00:00 UTC on 1 January 1970)
         Timezone:
             Multiple times can be Possix reference times and be different times due to timezones, we
-            standardize this by using UTC as the standard timeone
+            standardize this by using UTC as the standard timezone
         Scale:
             The standard LINUX timescale is seconds, but Binance uses ms so we need to convert
     """
@@ -119,9 +119,9 @@ class Time:
         return _T
     
     
-    #######################
-    ## CONVERT FROM FLAG ##
-    #######################
+    #########################
+    ## INTERACT WITH FLAGS ##
+    #########################
     
     @staticmethod
     def parse_interval_flag(flag):
@@ -134,6 +134,10 @@ class Time:
     @staticmethod
     def valid_steps():
         return VALID_STEPS
+    
+    @staticmethod
+    def int_to_multiplier():
+        return INT_TO_MULTIPLIER
     
     
     #######################
@@ -204,7 +208,7 @@ class Time:
     def iter_Time(start_Time, end_Time, sec_interval=600, conv=False):
         """
             start_Time, end_Time: random Time objects
-            conv: False -> string format return, True -> int tuple format return
+            conv: False -> string format return, True -> Time format return
             
             Returns: Time object generator
         """

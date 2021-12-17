@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Iterable
+from typing import Generator, Iterable
 
 from treelib import Node, Tree
 
@@ -23,25 +23,25 @@ class SliceNode(object):
         
         self.height = 1
     
-    def __slice__(self):
-        return (self.start, self.stop, self.step)
-    
-    def __hash__(self):
+    def __hash__(self) -> hash:
         return hash(self.__slice__())
     
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         assert isinstance(other, SliceNode)
         return True if (self.__slice__()==other.__slice__()) else False
     
     def __repr__(self):
         return self.repr()
     
-    def repr(self):
+    def repr(self) -> str:
         if (not isinstance(self.start,str)) and (not isinstance(self.stop,str)) and len(f'{int(self.start)}')>=10 and len(f'{int(self.stop)}')>=10:
             i_flag = self.step if not self.step in Time.valid_steps() else Time.valid_steps()[self.step]
             return f'{Time(utc_tmsp=self.start)}  ::  {Time(utc_tmsp=self.stop)}  ::  {i_flag}'
         
         return f'{self.start}:{self.stop}:{self.step} >> {self.value}'
+    
+    def __slice__(self) -> tuple:
+        return (self.start, self.stop, self.step)
     
     def patch(self):
         self._min,self._max,self._min_step,self._max_start,self.height = SliceTree.subtree_data(self)
@@ -58,7 +58,7 @@ class SliceTree(object):
     ## SLICETREE BUILTIN ##
     #######################
     
-    def __init__(self, iterable:Iterable=[], align_intervals=False, align_steps=False, default_step=DEFAULT_STEP):
+    def __init__(self, iterable:list=[], data:dict={}, align_intervals=False, align_steps=False, default_step=DEFAULT_STEP):
         self.root = None
         self.interval_set = set()
         self.align_intervals, self.align_steps = align_intervals, align_steps
@@ -66,6 +66,10 @@ class SliceTree(object):
 
         for _iter in iterable:
             if isinstance(_iter, tuple): self.insert_tup(_iter)
+        for interval, val in data.items():
+            if isinstance(interval, tuple):
+                assert len(interval)<=3
+                self.__setitem__(slice(*interval), value=val)
     
     def __setitem__(self, _slice:slice, value=None):
         interval = SliceTree.fix_interval(_slice, default_step=self.default_step)
@@ -81,20 +85,8 @@ class SliceTree(object):
         self.interval_set.remove(interval)
         self.root = SliceTree.delete_node(_slice, self.root, None, default_step=self.default_step)
     
-    def __getitem__(self, _slice:slice):
-        querry_anc_generator = self.querry_anc(_slice)
-
-        first_value = next(querry_anc_generator, None)
-        if not first_value:
-            return
-        if first_value[0]:
-            yield from self.traverse_inorder_interior(_slice, first_value[1])
-        else:
-            yield from self.yield_wrapper(_slice, first_value[1], fix_start=False) ## Manually yield first_value as it may be outside start range
-
-        for is_subtree, parent in querry_anc_generator:
-            if is_subtree: yield from self.traverse_inorder_interior(_slice, parent)
-            else: yield from self.yield_wrapper(_slice, parent)
+    def __getitem__(self, _slice:slice) -> Generator:
+        yield from self.full_querry(_slice)
     
     def __repr__(self):
         if not self.root:
@@ -112,8 +104,7 @@ class SliceTree(object):
     ##### CORRECT INPUT INTERVAL #####
     ##################################
     @staticmethod
-    def fix_interval(_slice:slice, default_step=DEFAULT_STEP):
-        ## Fix interval
+    def fix_interval(_slice:slice, default_step=DEFAULT_STEP) -> tuple:
         if type(_slice) == int: ## FIX slice is an index
             return (_slice,_slice,0)
         assert isinstance(_slice,slice)
@@ -140,7 +131,7 @@ class SliceTree(object):
             self.__setitem__(slice(tup[0],tup[1],tup[2]), value=tup[3])
 
     @staticmethod
-    def insert_node(_slice:slice, root:SliceNode, parent:SliceNode, value=None, default_step=DEFAULT_STEP):
+    def insert_node(_slice:slice, root:SliceNode, parent:SliceNode, value=None, default_step=DEFAULT_STEP) -> SliceNode:
         interval = SliceTree.fix_interval(_slice, default_step=default_step)
         start,stop,step = interval
         # Find the correct location and insert the node
@@ -160,7 +151,7 @@ class SliceTree(object):
         return SliceTree.successor(root.left)
 
     @staticmethod
-    def delete_node(_slice:slice, root:SliceNode, parent:SliceNode, default_step=DEFAULT_STEP):
+    def delete_node(_slice:slice, root:SliceNode, parent:SliceNode, default_step=DEFAULT_STEP) -> SliceNode:
         interval = SliceTree.fix_interval(_slice, default_step=default_step)
         start,stop,step = interval
         # Find the node to be deleted and remove it
@@ -213,45 +204,76 @@ class SliceTree(object):
     ## TREE QUERRYING ##
     ####################
     
-    def full_querry(self, _slice:slice):
+    def querry(self, _slice:slice) -> Generator:
+        querry_anc_generator = self.querry_anc(_slice)
+
+        first_value = next(querry_anc_generator, None)
+        while first_value:
+            if first_value[1].stop < _slice.start:
+                first_value = next(querry_anc_generator, None)
+                continue
+            if first_value[0]:
+                yield from self.traverse_inorder_interior(_slice, first_value[1])
+            else:
+                yield from self.yield_wrapper(_slice, first_value[1], fix_start=False) ## Manually yield first_value as it may be outside start range
+            if first_value[1].stop >= _slice.start: break
+            first_value = next(querry_anc_generator, None)
+        if not first_value:
+            return
+
+        for is_subtree, parent in querry_anc_generator:
+            if is_subtree: yield from self.traverse_inorder_interior(_slice, parent)
+            else: yield from self.yield_wrapper(_slice, parent)
+    
+    
+    def full_querry(self, _slice:slice) -> Generator:
         start,stop,step=SliceTree.fix_interval(_slice, default_step=self.default_step)
         seq_max = start
 
-        querry_generator = self.__getitem__(slice(start,stop,step))
-
+        querry_generator = self.querry(slice(start,stop,step))
+        
         running_node = next(querry_generator, None)
         if not running_node or stop<running_node.start: ## If no solution
             yield None, (start,stop,step)
             return
-        if start==stop:
+        if start==stop and step==0: ## If point querry --> single solution
             yield running_node.value, (seq_max,seq_max,0)
         if start < running_node.start:
-            yield None, (start, running_node.start, step)
-            seq_max = running_node.start
-        
+            div_max = start + ((running_node.start-start)//step)*step
+            if div_max < running_node.start: div_max += step
+            yield None, (start, div_max, step)
+            seq_max = div_max
         
         for node in querry_generator:
             if seq_max >= stop: return
             if running_node.stop >= stop: break
-            if node.start<=running_node.start: ## Update running node
+            if node.stop <= running_node.stop: continue
+            if node.start<=seq_max: ## Update running node
                 if node.stop > running_node.stop:
                     running_node = node
             else: ## New running node
                 if node.stop > running_node.stop:
-                    yield running_node.value, (seq_max, running_node.stop, running_node.step)
-                    seq_max = running_node.stop
+                    div_running_max = seq_max + ((running_node.stop-seq_max)//step)*step
+                    yield running_node.value, (seq_max, div_running_max, running_node.step)
+                    seq_max = div_running_max
+                    
                     if seq_max < node.start: ## Gap
-                        yield None, (seq_max, node.start, step)
-                        seq_max = node.start
+                        div_max = seq_max + ((node.start-seq_max)//step)*step
+                        if div_max < node.start: div_max += step
+                        yield None, (seq_max, div_max, step)
+                        seq_max = div_max
                     running_node = node
         if seq_max < running_node.stop and seq_max < stop:
-            yield running_node.value, (seq_max, min(running_node.stop, stop), running_node.step)
-            seq_max = min(running_node.stop, stop)
+            div_max = seq_max + ((running_node.stop-seq_max)//step)*step
+            if div_max < running_node.stop: div_max += step
+            div_max = min(div_max, stop)
+            yield running_node.value, (seq_max, div_max, running_node.step)
+            seq_max = div_max
         if seq_max < stop:
             yield None, (seq_max, stop, step)
 
     
-    def querry_anc(self, _slice:slice):
+    def querry_anc(self, _slice:slice) -> Generator:
         if not self.root:
             return
         
@@ -328,27 +350,21 @@ class SliceTree(object):
     ## MINIMALLY VIABLE SEARCHING ##
     ################################
 
-    def yield_wrapper(self, _slice:slice, node:SliceNode, fix_start=True):
+    def yield_wrapper(self, _slice:slice, node:SliceNode, fix_start=True) -> Generator:
         start,stop,step = SliceTree.fix_interval(_slice, default_step=self.default_step)
-        if (start==stop and step==0) and (node.start<=start<=node.stop):
-            yield node
-            return
-        if fix_start and start>node.start:
-            yield
-            return
+        if start==stop and step==0: ## Handle point yields
+            if node.start<=start<=node.stop:
+                yield node
+                return
+            else:
+                return
+        if fix_start and node.start<start: return ## RETURN: if start is out of bounds
         if node.start<=stop and node.step<=step:
-            if self.align_intervals and ((node.start-start)%step!=0):
-                yield
-                return
-            if self.align_steps and ((step%node.step)!=0):
-                yield
-                return
-            if step%node.step != 0: ## If the timesequence is not divisible
-                yield
-                return
+            if self.align_intervals and ((node.start-start)%step!=0): return ## RETURN: if our start is misaligned to the querry
+            if self.align_steps and ((step%node.step)!=0): return ## RETURN: if the timestep is not divisible by step
             yield node
     
-    def traverse_inorder_interior(self, _slice:slice, root:SliceNode):
+    def traverse_inorder_interior(self, _slice:slice, root:SliceNode) -> Generator:
         if not root: return
         start,stop,step = SliceTree.fix_interval(_slice, default_step=self.default_step)
         if root.left and root.left._min<stop and root.left._max_start>=start and root.left._min_step<=step:
@@ -362,7 +378,7 @@ class SliceTree(object):
     ## QUERRY RANGE SEARCHING ##
     ############################
     
-    def find_lower_node(self, _slice:slice):
+    def find_lower_node(self, _slice:slice) -> SliceNode:
         """
             [Given some querry _slice, we wish to find a node that overlaps _slice.start. If none exists, return the largest node smaller than _slice.start]
         """
@@ -382,7 +398,7 @@ class SliceTree(object):
                 cur_node = cur_node.left
         return SliceTree.find_densest_equivilancy(cur_node)
     
-    def find_upper_node(self, _slice:slice):
+    def find_upper_node(self, _slice:slice) -> SliceNode:
         """
             [Given some querry _slice, we wish to find a node that overlaps _slice.stop. If none exists, return the largest node smaller than _slice.stop]
         """
@@ -409,7 +425,7 @@ class SliceTree(object):
     ###################################
 
     @staticmethod
-    def find_densest_equivilancy(cur_node:SliceNode):
+    def find_densest_equivilancy(cur_node:SliceNode) -> SliceNode:
         """
             [Given some node, find the child of that node (with equivalent start,stop) with the smallest step.
              This is necessary because self-balancing implies that we don't know if equivalencies are to the left or right]
@@ -428,41 +444,23 @@ class SliceTree(object):
                 frontier.appendleft(node.right)
         return min_node
     
-    ## TODO:: EXPERIMENTAL :: NOT SURE IF NECESSARY
-    @staticmethod
-    def find_first_equivilancy(_slice:slice, cur_node:SliceNode):
-        """
-            [Given some cur_node with start,stop defined by _slice, returns the first node in cur_node's subtree
-             with step defined by _slice]
-        """
-        start,stop,step = SliceTree.fix_interval(_slice)
-        if cur_node.start!=start or cur_node.stop!=stop: return None
-        if cur_node.step==step: return cur_node
-        if cur_node.right:
-            right = SliceTree.find_first_equivilancy(_slice, cur_node.right)
-            if right: return right
-        if cur_node.left:
-            left = SliceTree.find_first_equivilancy(_slice, cur_node.left)
-            if left: return left
-        return cur_node
-
 
     ######################
     ## TREE REBALANCING ##
     ######################
 
-    def get_height(root):
+    def get_height(root) -> int:
         if not root:
             return 0
         return root.height
 
-    def get_balance(root):
+    def get_balance(root) -> int:
         if not root:
             return 0
         return SliceTree.get_height(root.left) - SliceTree.get_height(root.right)
 
     @staticmethod
-    def rebalance(root):
+    def rebalance(root) -> SliceNode:
         balanceFactor = SliceTree.get_balance(root)
 
         # Balance the tree
@@ -481,12 +479,12 @@ class SliceTree(object):
         return root
     
     @staticmethod
-    def l_rotate(x):
-        """[Left rotate]
+    def l_rotate(x) -> SliceNode:
+        """[Left Rotate]
             x             y
-             \           /
+             \\          /
               y   -->   x
-             /           \
+             /           \\
             b             b
         """
         
@@ -508,12 +506,12 @@ class SliceTree(object):
         return y
 
     @staticmethod
-    def r_rotate(x):
-        """[Right rotate]
+    def r_rotate(x) -> SliceNode:
+        """[Right Rotate]
               x          y
-             /            \
+             /            \\
             y      -->     x
-             \            /
+             \\           /
               b          b
         """
         
@@ -535,7 +533,7 @@ class SliceTree(object):
         return y
 
     ## Get subtree data of node that is guaranteed to exist     Returns: (_min, _max, _min_step)
-    def subtree_data(root):
+    def subtree_data(root) -> tuple:
         min_l, min_r = root.start if not root.left else root.left._min, root.start if not root.right else root.right._min
         max_l, max_r = root.stop if not root.left else root.left._max, root.stop if not root.right else root.right._max
         ms_l, ms_r = root.step if not root.left else root.left._min_step, root.step if not root.right else root.right._min_step
@@ -548,7 +546,7 @@ class SliceTree(object):
     ## DEBUG UTILITY ##
     ###################
 
-    def traverse(root, method='INORDER'):
+    def traverse(root, method='INORDER') -> Generator:
         if not root: return
         if method == 'PREORDER':
             yield root

@@ -3,7 +3,7 @@
 from datetime import timedelta
 
 from cointegridy.src.classes.basket import Basket
-from cointegridy.src.exceptions import *
+from cointegridy.src.classes.exceptions import *
 from cointegridy.src.classes.data_loader import DataLoader
 from cointegridy.src.classes import Time
 
@@ -61,6 +61,7 @@ class Event():
         elif self.direction == 'under' and series[prevstamp] > self.target and series[tmsp] <= self.target:
                 return True
         return False
+
 
 class Strategy():
 
