@@ -156,7 +156,7 @@ class Trader():
         Choose a strategy to use. For now this will just be different types of mean reversion trades.
         '''
 
-        self.strategy = Strategy(bandAbove,bandBelow,mean+std/2,mean-std)
+        self.strategy = Strategy(bandAbove,bandBelow,mean+std/2,mean-std/2)
 
     def trade(self,tmsp,asset,amount,trade_type,lag='5s'):
         """
@@ -337,7 +337,7 @@ if __name__ == "__main__":
     
     data = loader[sample_symbol][start_Time:end_Time]
 
-    bt = Backtester()
+    bt = Backtester(start_Time,end_Time)
 
     print(data)
 
