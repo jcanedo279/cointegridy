@@ -7,6 +7,7 @@
 
 <br />
 
+
 Cointegridy Package Usage
 -------------------------
 
@@ -21,6 +22,17 @@ Cointegridy Package Usage
     Running this command with the optional `--addopts <pathFromCWDToTestFileName>.py` will specify a test file to run. Running this command with the optional `--addopts <pathFromCWDToTestFileName>.py::<test_method>` will limit the test to a specific method.
 
 <br />
+
+
+Cointegridy Virtual Environment Usage
+-------------------------
+
+ * The Cointegridy Virtual Environment should be automatically created upon package installation. This package's virtual envrionment is located in `./venv/`.
+   
+   This virtual environment is activated via the commant `source <path_to_venv>/bin/activate`
+
+<br />
+
 
 Cointegridy Project Structure
 -----------------------------

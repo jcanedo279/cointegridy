@@ -23,6 +23,7 @@ class Sampler:
             min_samp_size (int, optional): [Minimum size of a symbol basket]. Defaults to 4.
             max_samp_size (int, optional): [Maximum size of a symbol basket]. Defaults to 6.
             num_samps (int, optional): [Number of samples]. Defaults to 100.
+            sample_method (str, optional): [The method to use for sampling]. Defaults to 'random'.
 
         Yields:
             [Iterable]: [symbol basket iterable]
@@ -46,13 +47,13 @@ class Sampler:
 
     def validate(self, symbol_baskets_gen, start_Time:Time, end_Time:Time, interval_flag='6h', validation_metric='open'):
         """[summary]
-        
+
         Args:
             symbol_baskets_gen ([Iterable]): [Generator of symbol basket iterables]
             start_Time (Time): [Time object denoting starting valiaiton time]
             end_Time (Time): [Time object denoting ending valiaiton time]
-            interval_flag (str, optional): [A string representation of the interval (ie '6h')]. Defaults to '6h'.
-            validation_metric (str, optional): [The metric to use for validaiton (ie 'open')]. Defaults to 'open'.
+            interval_flag (str, optional): [A string representation of the interval]. Defaults to '6h'.
+            validation_metric (str, optional): [The metric to use for validaiton]. Defaults to 'open'.
 
         Yields:
             [Iterable]: [valid symbol basket iterable]
