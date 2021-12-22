@@ -26,6 +26,11 @@ Cointegridy Package Usage
 <br />
 
 
+API Keys
+-------------------------
+You will need to update env directory with a new .env file specifying your Binance and Alpha Vantage keys. This file must be downloaded separately.
+
+
 Cointegridy Virtual Environment Usage
 -------------------------
 
