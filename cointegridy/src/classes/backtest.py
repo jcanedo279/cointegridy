@@ -52,7 +52,6 @@ class Event():
         # The .loc expressions for previous stamp need to be corrected so it can get the previous timestamp dynamically. I'm just dumb and don't know how to do that.
 
         prevstamp = tmsp - timedelta(minutes = 5)
-        start = tmsp - timedelta(minutes=10)
 
         # Note: this won't run properly until you add code to make these starts and stops into Time objects.
         

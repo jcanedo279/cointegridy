@@ -7,6 +7,9 @@ other methods.
 Attributes:
 
 - name_ name of coin on exchange
+    - Note: all our liquidity will intially be in terms of the stablecoin Tether (USDT).
+      To simplify, just call your coin its ticker name, and when we fetch price data for a basket,
+      that will be accounted for.
 
 - is_good_ boolean, is the coin I(1)
 
