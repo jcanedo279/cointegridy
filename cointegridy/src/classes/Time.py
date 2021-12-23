@@ -63,7 +63,7 @@ class Time:
         self.utc_dtobj = datetime.now(UTC_TZOBJ) if utc_tmsp==None else datetime.fromtimestamp(utc_tmsp)
         
     def __repr__(self):
-        return f'{self.utc_dtobj.year}-{self.utc_dtobj.month}-{self.utc_dtobj.day}'
+        return f'{self.utc_dtobj}'
         # return f'{self.utc_dtobj.year}-{self.utc_dtobj.month}-{self.utc_dtobj.day}  {self.utc_dtobj.hour}:{self.utc_dtobj.minute}'
         
         
