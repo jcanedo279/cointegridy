@@ -14,6 +14,8 @@ Cointegridy Package Usage
  * **package installation:** `pip install -e .`
    
    Running this command from the root of the workspace will install the cointegridy package. The flag `-e` makes sure the cointegridy package is editable so we don't have to re-install the package.
+   
+   In general you want to: clone, pip install -e ., activate your venv, run the tests, cut a new branch and start developing.
 
 * **package testing:** `python setup.py test [--addopts <pathFromCWDToTestFileName>.py::<test_method>]`
 
@@ -22,6 +24,11 @@ Cointegridy Package Usage
     Running this command with the optional `--addopts <pathFromCWDToTestFileName>.py` will specify a test file to run. Running this command with the optional `--addopts <pathFromCWDToTestFileName>.py::<test_method>` will limit the test to a specific method.
 
 <br />
+
+
+API Keys
+-------------------------
+You will need to update env directory with a new .env file specifying your Binance and Alpha Vantage keys. This file must be downloaded separately.
 
 
 Cointegridy Virtual Environment Usage
