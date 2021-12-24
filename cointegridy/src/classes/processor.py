@@ -92,8 +92,9 @@ class Processor:
         symbol_to_denoms = {}
         for ticker in self.exchange.symbols:
             symbol,denom = ticker.split('/')
+            # print(symbol, denom)
             if symbol in symbol_to_denoms:
-                symbol_to_denoms[symbol].update(denom)
+                symbol_to_denoms[symbol].update({denom})
             else:
                 symbol_to_denoms[symbol] = {denom}
         return symbol_to_denoms
