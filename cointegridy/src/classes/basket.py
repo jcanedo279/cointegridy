@@ -44,7 +44,7 @@ from statsmodels.tsa.stattools import coint
 # Custom Imports
 from cointegridy.src.classes.data_loader import TreeLoader
 from cointegridy.src.classes.coin import Coin
-from cointegridy.src.utils import stats as stat
+from cointegridy.src.utils import stats as stats
 
 
 class Basket():
