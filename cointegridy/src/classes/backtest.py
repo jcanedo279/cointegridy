@@ -4,8 +4,8 @@ from datetime import timedelta
 
 from cointegridy.src.classes.basket import Basket
 from cointegridy.src.classes.exceptions import *
-from cointegridy.src.classes.data_loader import DataLoader
-from cointegridy.src.classes import Time
+from cointegridy.src.classes.data_loader import TreeLoader,TreeSymbolLoader
+from cointegridy.src.classes.Time import Time
 
 from sys import argv
 
@@ -307,9 +307,10 @@ class Backtester():
 
         placeholder = None
         trader = Trader(self.basket)
+        trader.set_logfile(logfile+'.txt')
+
         trader.add_funds(200)
         trader.strat_init(placeholder,placeholder,placeholder)
-        trader.set_logfile(logfile+'.txt')
 
         trader.set_fees(placeholder,placeholder)
 
@@ -327,17 +328,21 @@ if __name__ == "__main__":
     
     log = argv[1]
 
-    start_date, end_date = (2021,2,1), (2021,6,1)
+    start_date, end_date = (2020,2,1), (2020,6,1)
 
     start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
         
-    loader = DataLoader()
     
-    sample_symbol = 'BTCUST'
-    
-    data = loader[sample_symbol][start_Time:end_Time]
+    sample_symbol = 'ETH'
+    sample_denom = 'USDT'
+    sample_interval = '1d'
+    loader = TreeSymbolLoader(sample_symbol, sample_denom,mode='df')
+
+    data = list(loader[start_Time:end_Time:Time.parse_interval_flag(sample_interval)])
+    #data = loader[start_Time:end_Time:Time.parse_interval_flag(sample_interval)]
 
     bt = Backtester(start_Time,end_Time)
-
+    bt.run()
+    #print([x for x in data])
     print(data)
 
