@@ -331,18 +331,27 @@ if __name__ == "__main__":
     start_date, end_date = (2020,2,1), (2020,6,1)
 
     start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
-        
+    
     
     sample_symbol = 'ETH'
-    sample_denom = 'USDT'
-    sample_interval = '1d'
-    loader = TreeSymbolLoader(sample_symbol, sample_denom,mode='df')
+    sample_denom = 'USD'
+    sample_interval = '6h'
 
-    data = list(loader[start_Time:end_Time:Time.parse_interval_flag(sample_interval)])
-    #data = loader[start_Time:end_Time:Time.parse_interval_flag(sample_interval)]
+    coinData = {(sample_symbol,sample_denom):
+    (start_date,end_date, '6h','v1')
+    }
 
-    bt = Backtester(start_Time,end_Time)
-    bt.run()
-    #print([x for x in data])
-    print(data)
+    #loader = TreeSymbolLoader(sample_symbol, sample_denom,mode='df')
+    loader = TreeLoader(data=coinData)
+
+    #data = list(loader[start_Time:end_Time:Time.parse_interval_flag(sample_interval)])
+    #print(data)
+    data = loader[sample_symbol:sample_denom][start_Time:end_Time:Time.parse_interval_flag(sample_interval)]
+
+    #bt = Backtester(start_Time,end_Time)
+    
+    #testBasket = Basket()
+    #bt.run(logfile = log)
+    print([x for x in data])
+    
 
