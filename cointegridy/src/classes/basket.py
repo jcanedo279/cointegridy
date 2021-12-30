@@ -44,18 +44,19 @@ from statsmodels.tsa.stattools import coint
 # Custom Imports
 from cointegridy.src.classes.data_loader import TreeLoader
 from cointegridy.src.classes.coin import Coin
+from cointegridy.src.classes.Time import Time
 from cointegridy.src.utils import stats as stats
 
 
 class Basket():
 
-    def __init__(self, coins, target, dataloader, method='linear_regression'):
+    def __init__(self, coins, target, method='linear_regression'):
 
         self.coef_ = []
         self.coins_ = coins
         self.method_ = method
         self.target_ = target
-        self.dataloader_ = dataloader
+        #self.dataloader_ = dataloader
         self.is_coint_ = None
         self.intercept_ = None
         self.upper_band_ = None
@@ -63,18 +64,22 @@ class Basket():
         self.std_ = None
         self.prices_ = None
     
-    def get_prices(self,start,end):
+    def load_prices(self,start,end,interval,denom='USD'):
+        
         '''
         Takes in start and end Time objects.
 
         Returns a pandas dataframe indexed by timestamps
         '''
-        df = pd.DataFrame()
-        
-        for coin in self.coins_:
-            df[coin.name_] = self.dataloader_[coin.name_.upper()+'USDT'][start:end]
 
-        self.prices_ = df
+        data = {(coin.name_,denom): [(start,end,interval,'v1')] for coin in self.coins_}
+        data_loader = TreeLoader(data,mode='df')
+
+        # Intermediate step: delete this!
+
+        print(data_loader)
+        self.data_loader = data_loader
+        #self.prices_ = data_loader[:][:]
 
 
     def fit(self, prices):
@@ -199,4 +204,22 @@ class Basket():
     def __str__(self):
         return "Basket:" + str(self.coins_)
 
+
+if __name__ == "__main__":
+    
+
+    start_date, end_date = (2021,2,1), (2021,6,1)
+
+    start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
+    
+    coins = [Coin('BTC'),Coin('ETH'),Coin('ADA'),Coin('DOT')]
+
+    basket1 = Basket(coins,coins[1])
+
+    print(basket1)
+
+    basket1.load_prices(start_date, end_date,'6h')
+    print([basket1.data_loader[x.name_:'USD'][start_date:end_date] for x in basket1.coins_])
+    #print(basket1.prices_)
+    
 

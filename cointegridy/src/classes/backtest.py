@@ -338,11 +338,11 @@ if __name__ == "__main__":
     sample_interval = '6h'
 
     coinData = {(sample_symbol,sample_denom):
-    (start_date,end_date, '6h','v1')
+    [(start_date,end_date, sample_interval,'v1')]
     }
 
     #loader = TreeSymbolLoader(sample_symbol, sample_denom,mode='df')
-    loader = TreeLoader(data=coinData)
+    loader = TreeLoader(data=coinData,mode='df')
 
     #data = list(loader[start_Time:end_Time:Time.parse_interval_flag(sample_interval)])
     #print(data)
@@ -352,6 +352,7 @@ if __name__ == "__main__":
     
     #testBasket = Basket()
     #bt.run(logfile = log)
-    print([x for x in data])
+    #print([x for x in data])
+    print(data)
     
 
