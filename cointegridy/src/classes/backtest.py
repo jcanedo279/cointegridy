@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 from cointegridy.src.classes.basket import Basket
+from cointegridy.src.classes.coin import Coin
 from cointegridy.src.classes.exceptions import *
 from cointegridy.src.classes.data_loader import TreeLoader,TreeSymbolLoader
 from cointegridy.src.classes.Time import Time
@@ -122,7 +123,12 @@ class Trader():
         self.open_position = False
         self.dollars_per_trade = self.funds / 4
         self.logfile = None
-        self.series = self.basket.prices_['spread']
+
+        if 'Spread' not in self.basket.prices_.columns:
+            self.basket.fit(self.basket.prices_)
+
+        self.series = self.basket.prices_['Spread']
+        self.starting_funds = 0
 
 
     def add_funds(self,cash):
@@ -130,6 +136,7 @@ class Trader():
         How much USDT, BNB etc do we want to put in the hands of our bot?
         ''' 
         self.funds += cash
+        self.starting_funds += cash
     
     def set_dollars_per_trade(self,amt):
         self.dollars_per_trade = amt
@@ -201,11 +208,11 @@ class Trader():
         if trade_type in ['buy','cover']:
             total_cost = (1 + self.fees['taker'])*cost
             self.funds -=  total_cost
-            self.log(tmsp,self.outfile,f'executed trade: {trade_type} {amount} {asset.name_} for total cost {total_cost}')
+            self.log(tmsp,f'executed trade: {trade_type} {amount} {asset.name_} for total cost {total_cost}')
         else:
             total_cost = (1 + self.fees['maker'])*cost
             self.funds -= total_cost
-            self.log(tmsp,self.outfile,f'executed trade: {trade_type} {amount} {asset.name_} for total cost {total_cost}')
+            self.log(tmsp,f'executed trade: {trade_type} {amount} {asset.name_} for total cost {total_cost}')
 
         self.positions[asset] += amount
 
@@ -221,12 +228,21 @@ class Trader():
         dollarAmt represents the total amount we want to commit to this trade.
 
         Trade type is controlled by the flag trade_type, and it takes on values (str) of buy,sell,short and cover.
+
+        Assumption here is that our account will be able to do complete short extension. That is, if we sell something short, we'll have
+        the entire proceeds from the short sale as a credit in our account. 
         '''
 
         y = 0
         coeffs = self.basket.coef_
         for i,coin in enumerate(self.basket.coins_):
-            y += self.processor.data[coin.name_]*coeffs[i]
+
+            if coin != self.basket.target_:
+                y += self.processor.data[coin.name_]*coeffs[i]*-1
+            else:
+                y += self.processor.data[coin.name_]*coeffs[i]
+
+                
         
         scale = dollarAmt / y
 
@@ -239,7 +255,7 @@ class Trader():
         Strat execute will return a flag. Based on this flag, the trader will make the associated trades if not already in a position.
         '''
 
-        if not self.logfile:
+        if not self.outfile:
             print('Don\'t run a trader without a logfile for now. Retry after calling trader.set_logfile.')
             return
         
@@ -256,15 +272,41 @@ class Trader():
             else:
                 self.spread_trade(tmsp,self.dollars_per_trade,'cover')
         
-        self.log(tmsp,self.outfile)
+        self.log(tmsp)
     
-    def log(self,tmsp,outfile,message=None):
+    def log(self,tmsp,message=None):
         
-        with open(outfile,'w+') as f:
+        if not self.outfile:
+            print('No logfile.')
+            return
+
+        with open(self.outfile,'w+') as f:
             if message:
                 f.write(str(tmsp) + ': ' + message)
             else:
-                f.write(f'{tmsp}: Holdings{self.positions}\nLiquidity: {self.funds} USDT \n_____________\n')
+                f.write(f'{tmsp}: Holdings{self.positions}\nLiquidity: {self.funds} USD \n_____________\n')
+    
+    def report(self,tmsp):
+        self.log(f'{tmsp}: Starting funds: ${self.starting_funds}. Ending funds: {self.funds}.\nNet PnL over the period: {self.funds - self.starting_funds} ({(self.funds - self.starting_funds)/self.starting_funds * 100}%)')
+
+    def liquidate(self,tmsp,final='True'):
+        '''
+        Closes out all positions in USD and returns a net P&L
+        '''
+
+        for coin,amount in self.positions.items():
+            if amount < 0:
+                self.trade(tmsp,coin,amount,'cover')
+            else:
+                self.trade(tmsp,coin,amount,'sell')
+        
+        if final:
+            self.report(tmsp)
+        else:
+            self.log(tmsp,'Liquidated on {tmsp}.')
+            self.log()
+    
+    
     
     def __str__(self):
         return f'Trader object \nHoldings: {self.positions}\nLiquidity: {self.funds} USDT'
@@ -280,6 +322,11 @@ class Backtester():
         self.basket = basket
     
     def run(self,logfile):
+
+        if logfile[-4:] != '.txt':
+            print('ERROR: your logfile is not a text file. Terminating.')
+
+            return
         '''
         Execute backtesting over the time interval
 
@@ -307,12 +354,14 @@ class Backtester():
 
         placeholder = None
         trader = Trader(self.basket)
-        trader.set_logfile(logfile+'.txt')
+        trader.set_logfile(logfile)
 
         trader.add_funds(200)
-        trader.strat_init(placeholder,placeholder,placeholder)
+
+        trader.strat_init(self.basket)
 
         trader.set_fees(placeholder,placeholder)
+        
 
         for time in self.basket.processor.get_data(self.start,self.end): 
             # I know this isn't an actual method but we gotta talk about end goals for the processor class
@@ -328,31 +377,22 @@ if __name__ == "__main__":
     
     log = argv[1]
 
-    start_date, end_date = (2020,2,1), (2020,6,1)
+    start_date, end_date = (2021,2,1), (2021,6,1)
 
     start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
     
-    
-    sample_symbol = 'ETH'
-    sample_denom = 'USD'
-    sample_interval = '6h'
+    coins = [Coin('BTC'),Coin('ETH'),Coin('ADA'),Coin('LINK')]
 
-    coinData = {(sample_symbol,sample_denom):
-    [(start_date,end_date, sample_interval,'v1')]
-    }
+    basket1 = Basket(coins,coins[0])
 
-    #loader = TreeSymbolLoader(sample_symbol, sample_denom,mode='df')
-    loader = TreeLoader(data=coinData,mode='df')
+    print(basket1)
 
-    #data = list(loader[start_Time:end_Time:Time.parse_interval_flag(sample_interval)])
-    #print(data)
-    data = loader[sample_symbol:sample_denom][start_Time:end_Time:Time.parse_interval_flag(sample_interval)]
+    basket1.load_prices(start_Time, end_Time,'6h')
+    basket1.fit(basket1.prices_)
 
-    #bt = Backtester(start_Time,end_Time)
-    
-    #testBasket = Basket()
-    #bt.run(logfile = log)
-    #print([x for x in data])
-    print(data)
-    
+    print(basket1.prices_)
+
+    bt = Backtester(start_Time,end_Time)
+    bt.select_basket(basket1)
+    bt.run(logfile = log)
 

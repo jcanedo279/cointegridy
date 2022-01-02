@@ -30,3 +30,10 @@ class invalidOrderID(Error):
     
     def __str__(self) -> str:
         return "Invalid order ID."
+
+class invalidMethod(Error):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+    
+    def __str__(self) -> str:
+        return "The method you called is not among the list supported.\nPlease refer to basket.py for documentation."

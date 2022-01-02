@@ -68,7 +68,7 @@ class Coin():
          return self.name_ < other.name_
 
     def __repr__(self):
-        return "Coin: " + str(self.name_)
+        return str(self.name_)
 
     def __str__(self):
         return "Coin: " + str(self.name_)

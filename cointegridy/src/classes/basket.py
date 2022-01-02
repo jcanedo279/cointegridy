@@ -42,15 +42,16 @@ import statsmodels.api as sm
 from statsmodels.tsa.stattools import coint
 
 # Custom Imports
-from cointegridy.src.classes.data_loader import TreeLoader
+from cointegridy.src.classes.processor import Processor
 from cointegridy.src.classes.coin import Coin
 from cointegridy.src.classes.Time import Time
 from cointegridy.src.utils import stats as stats
+from cointegridy.src.classes.exceptions import *
 
 
 class Basket():
 
-    def __init__(self, coins, target, method='linear_regression'):
+    def __init__(self, coins, target, method='linear_regression',report=False):
 
         self.coef_ = []
         self.coins_ = coins
@@ -63,26 +64,52 @@ class Basket():
         self.lower_band_ = None
         self.std_ = None
         self.prices_ = None
+        self.report = report
     
     def load_prices(self,start,end,interval,denom='USD'):
         
         '''
         Takes in start and end Time objects.
 
-        Returns a pandas dataframe indexed by timestamps
+        Returns a pandas dataframe of close prices indexed by timestamps
+
+        Note that OHLCV data is not supported for the kind of analysis that we want to do,
+
+        but CCXT only returns data in that format. 
         '''
+        pc = Processor()
+
+        df = pd.DataFrame()
+
+        for coin in self.coins_:
+            
+            intermed = pd.DataFrame(pc.symbol_to_ohlc_seq(coin.name_,start,end,interval_flag='6h'),\
+                columns=['TMSP','Open', 'High', 'Low', coin.name_, 'Volume']).set_index('TMSP')
+            intermed = intermed.drop(columns=['Open','High','Low','Volume'])
+
+            if not intermed[coin.name_].all:
+                print('Warning: no data exists for coin in specified date range.')
+            if df.empty:
+                df = intermed
+            else:
+                df = df.join(intermed,on='TMSP')
+            
+
+        self.prices_ = df
+
+
+        '''
+        //TODO: add this code back in when issues with TreeLoader are resolved
+        # This code uses Jorge's slicetree dataloader. It doesn't work right now so I'm using processor
 
         data = {(coin.name_,denom): [(start,end,interval,'v1')] for coin in self.coins_}
         data_loader = TreeLoader(data,mode='df')
 
-        # Intermediate step: delete this!
-
-        print(data_loader)
         self.data_loader = data_loader
-        #self.prices_ = data_loader[:][:]
+        self.prices_ = data_loader[:][:]'''
 
 
-    def fit(self, prices):
+    def fit(self):
         """
         Returns coefficients and intercept of linear combination.
         
@@ -97,21 +124,28 @@ class Basket():
         - y is target data # TODO: Ensure this with a test
         """
 
-        y = prices[self.target_]
-        X = prices.drop([self.target_], axis=1)
+        y = self.prices_[repr(self.target_)]
+        X = self.prices_.drop([repr(self.target_)], axis=1)
 
         if self.method_ == 'linear_regression':
             self.fit_linear_regression(X, y)
         elif self.method_ == 'ols':
             self.fit_ols(X, y)
         else:
-            raise('Invalid method')
-
-        print("Fitting", self.method_, "...")
-        print("Found coefficients for basket: ", [1] + list(self.coef_))
-        print("At intercept: ", self.intercept_)
+            raise invalidMethod()
         
-        self.prices_['spread'] = self.prices_.dot(pd.Series(self.coef_))
+        weights = pd.DataFrame([1] + list(self.coef_))
+        if self.report:
+            print("Fitting", self.method_, "...")
+            print("Found coefficients for basket: ", [1] + list(self.coef_))
+            print("At intercept: ", self.intercept_)
+
+        #print(pd.Series([1] + list(self.coef_)))
+        #self.prices_['Spread'] = self.prices_.dot(pd.Series([1] + list(self.coef_)))
+        #print(f'Prices: {self.prices_.shape}, Weights: {weights.shape}')
+        #print(weights)
+
+        #self.prices_['Spread'] = self.prices_.dot(weights.to_numpy())
         
         return self.coef_, self.intercept_
         
@@ -131,7 +165,7 @@ class Basket():
         self.coef_ = params[1:]
         self.intercept_ = params[0] 
 
-    def find_spread(self, prices):
+    def find_spread(self):
         """
         Return the spread of our linear combination.
 
@@ -141,17 +175,19 @@ class Basket():
         - prices is price dataframe of coins_
         - Basket already ran fit() method
         """
-        y = prices[self.target_]
-        X = prices.drop([self.target_], axis=1)        
+        y = self.prices_[repr(self.target_)]
+        X = self.prices_.drop([repr(self.target_)], axis=1)        
 
         spread = y - X.multiply(self.coef_).sum(axis=1)
-        spread.name = 'Spread'
+        self.prices_['Spread'] = spread
+
+        #spread.name = 'Spread'
 
         self.std_ = spread.std()
 
         return spread
     
-    def is_coint(self, spread, pct='1%'):
+    def is_coint(self, pct='1%'):
         """
         Check if resulting spread is stationary
 
@@ -162,23 +198,31 @@ class Basket():
         """
 
         if not self.is_valid():
-            raise("Basket is invalid, timeseries are not I(1)")
+            
+            #raise("Basket is invalid, timeseries are not I(1)")
+            # This would make the program terminate. We probably  don't want to do this
+            # because this would make it hard to search and sort baskets without exception handling.
+            # Might as well return false here.
+            if self.report:
+                print("Basket is invalid, timeseries are not I(1)")
+            return False
 
-        return stats.is_stationary(spread, pct=pct)
+        return stats.is_stationary(self.prices_['Spread'], pct=pct)
     
     def is_valid(self):
         """
         Checks that coins in basket are valid, ie. I(1)
         """
         for coin in self.coins_:
-            if coin.is_good_ != True:
-                print("Basket is not valid. Found that the following coin is not I(1):", coin)
+            if not coin.is_good_:
+                if self.report:
+                    print("Basket is not valid. Found that the following coin is not I(1):", coin)
                 return False
-        
-        print("Basket is valid, all coins are I(1).")
+        if self.report:
+            print("Basket is valid, all coins are I(1).")
         return True
 
-    def strat(self, spread, num_stds=1, plot=True):
+    def strat(self, spread, num_stds=1, plot=False):
         """
         USING BOLLINGER BANDS
 
@@ -198,6 +242,17 @@ class Basket():
 
         return self.upper_band_, self.lower_band_
 
+    def setup(self):
+        '''
+        Completely prepare the basket for use in backtesting. This entails fitting coefficients, 
+        finding the spread, and finding bollinger bands to trade strategy 1. 
+        '''
+
+        self.fit()
+        self.find_spread()
+        return self.is_coint()
+
+
     def __repr__(self):
         return "Basket:" + str(self.coins_)
 
@@ -208,18 +263,29 @@ class Basket():
 if __name__ == "__main__":
     
 
-    start_date, end_date = (2021,2,1), (2021,6,1)
+    start_date, end_date = (2021,5,1), (2021,6,1)
 
     start_Time, end_Time = Time.date_to_Time(*start_date), Time.date_to_Time(*end_date)
     
-    coins = [Coin('BTC'),Coin('ETH'),Coin('ADA'),Coin('DOT')]
+    coins = [Coin('LTC'),Coin('ETH'),Coin('ADA'),Coin('LINK')]
 
-    basket1 = Basket(coins,coins[1])
+    basket1 = Basket(coins,coins[0],report='True')
 
     print(basket1)
 
-    basket1.load_prices(start_date, end_date,'6h')
-    print([basket1.data_loader[x.name_:'USD'][start_date:end_date] for x in basket1.coins_])
-    #print(basket1.prices_)
+    basket1.load_prices(start_Time, end_Time,'1h')
+
+    basket1.fit()
+    basket1.find_spread()
+    print(basket1.is_coint())
+    print(basket1.prices_)
+
+    basket2 = Basket(coins,coins[0])
+
+    print(basket1)
+
+    basket2.load_prices(start_Time, end_Time,'1h')
+    basket2.setup()
+    print(basket2.prices_)
     
 
