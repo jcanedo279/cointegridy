@@ -124,10 +124,10 @@ class Trader():
         self.dollars_per_trade = self.funds / 4
         self.logfile = None
 
-        if 'Spread' not in self.basket.prices_.columns:
-            self.basket.fit(self.basket.prices_)
+        #if 'Spread' not in self.basket.prices_.columns:
+        #    self.basket.setup()
 
-        self.series = self.basket.prices_['Spread']
+        #self.series = self.basket.prices_['Spread']
         self.starting_funds = 0
 
 
@@ -314,12 +314,15 @@ class Trader():
 
 class Backtester():
 
-    def __init__(self,start,end):
+    def __init__(self,start,end,res):
         self.start = start
         self.end = end
+        self.res = res
 
     def select_basket(self,basket):
         self.basket = basket
+        self.basket.load_prices(start_Time, end_Time,self.res)
+        self.basket.setup()
     
     def run(self,logfile):
 
@@ -330,10 +333,13 @@ class Backtester():
         '''
         Execute backtesting over the time interval
 
-        Create a trader
-        Choose a strategy
-        Add funds
-        Set a date range and a broker
+        - Select a basket of coins
+        - Create a trader
+        - Choose a strategy
+         L for now this is just a matter of choosing bollinger bands, but a strategy contains events,
+           meaning that this can be changed later if we find that swing trading doesn't work
+            
+        - Set a date range and a broker
 
         Loop:
         at each timestep from start to stop:
@@ -383,16 +389,16 @@ if __name__ == "__main__":
     
     coins = [Coin('BTC'),Coin('ETH'),Coin('ADA'),Coin('LINK')]
 
-    basket1 = Basket(coins,coins[0])
+    basket1 = Basket(coins,coins[0],report=True)
 
-    print(basket1)
 
     basket1.load_prices(start_Time, end_Time,'6h')
-    basket1.fit(basket1.prices_)
 
-    print(basket1.prices_)
 
     bt = Backtester(start_Time,end_Time)
+
     bt.select_basket(basket1)
+    print(bt.basket.prices_)
+
     bt.run(logfile = log)
 

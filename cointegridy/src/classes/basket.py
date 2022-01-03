@@ -134,14 +134,14 @@ class Basket():
         else:
             raise invalidMethod()
         
-        weights = pd.DataFrame([1] + list(self.coef_))
+        #weights = pd.DataFrame([1] + list(self.coef_))
         if self.report:
             print("Fitting", self.method_, "...")
             print("Found coefficients for basket: ", [1] + list(self.coef_))
             print("At intercept: ", self.intercept_)
 
         #print(pd.Series([1] + list(self.coef_)))
-        #self.prices_['Spread'] = self.prices_.dot(pd.Series([1] + list(self.coef_)))
+        #self.prices_['Spread'] = self.prices_[repr(self.target_)] - self.prices_.drop(repr(self.target_)).dot(pd.Series(list(self.coef_)))
         #print(f'Prices: {self.prices_.shape}, Weights: {weights.shape}')
         #print(weights)
 
